@@ -1,0 +1,4 @@
+interface:
+  display_name: "Paper Reading Formula Tutor"
+  short_description: "Section + formula deep tutoring"
+  default_prompt: "Use $paper-reading-formula-tutor to explain this paper section-by-section, decode every symbol, and derive formulas step by step with no skipped algebra."

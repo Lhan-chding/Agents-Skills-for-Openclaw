@@ -1,0 +1,4 @@
+interface:
+  display_name: "Research-First Secure Coding"
+  short_description: "Research-grounded secure coding workflow"
+  default_prompt: "Use $research-first-secure-coding to research trusted evidence first, then deliver a modular secure implementation with OpenClaw hard-control awareness."

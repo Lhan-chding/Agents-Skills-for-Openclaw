@@ -1,0 +1,4 @@
+interface:
+  display_name: "Writing Feishu Copilot"
+  short_description: "Doc rewrite and collaboration assistant"
+  default_prompt: "Use $writing-feishu-copilot to provide minimal-risk edit suggestions and a paste-ready Feishu version, with terminology consistency and change traceability."

@@ -1,0 +1,27 @@
+{
+  "channels": {
+    "feishu": {
+      "enabled": true,
+      "appId": "REPLACE_WITH_FEISHU_APP_ID",
+      "appSecret": "REPLACE_WITH_FEISHU_APP_SECRET",
+      "connectionMode": "websocket",
+      "domain": "feishu",
+      "groupPolicy": "allowlist"
+    },
+    "discord": {
+      "enabled": true,
+      "token": "REPLACE_WITH_DISCORD_BOT_TOKEN",
+      "groupPolicy": "allowlist",
+      "streaming": "off"
+    }
+  },
+  "bindings": [
+    {
+      "agentId": "dev",
+      "match": {
+        "channel": "feishu",
+        "accountId": "default"
+      }
+    }
+  ]
+}

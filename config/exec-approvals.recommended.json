@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "defaults": {
+    "security": "allowlist",
+    "ask": "always",
+    "askFallback": "deny",
+    "autoAllowSkills": false
+  },
+  "agents": {
+    "main": {
+      "security": "allowlist",
+      "ask": "always",
+      "askFallback": "deny",
+      "autoAllowSkills": false,
+      "allowlist": []
+    },
+    "dev": {
+      "security": "allowlist",
+      "ask": "always",
+      "askFallback": "deny",
+      "autoAllowSkills": false,
+      "allowlist": []
+    }
+  }
+}

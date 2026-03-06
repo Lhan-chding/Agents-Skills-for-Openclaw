@@ -1,0 +1,4 @@
+interface:
+  display_name: "Memory Curator"
+  short_description: "Local memory maintenance and compression"
+  default_prompt: "Use $memory-curator to compress local memory notes with provenance, promote durable facts, and keep open loops actionable."

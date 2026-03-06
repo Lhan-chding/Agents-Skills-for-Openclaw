@@ -1,0 +1,158 @@
+{
+  "tools": {
+    "profile": "minimal",
+    "elevated": {
+      "enabled": false
+    }
+  },
+  "agents": {
+    "defaults": {
+      "sandbox": {
+        "mode": "all",
+        "scope": "session",
+        "workspaceAccess": "ro",
+        "browser": {
+          "allowHostControl": false
+        }
+      },
+      "memorySearch": {
+        "provider": "local",
+        "fallback": "none",
+        "local": {
+          "modelPath": "hf:ggml-org/embeddinggemma-300m-qat-q8_0-GGUF/embeddinggemma-300m-qat-Q8_0.gguf"
+        },
+        "sync": {
+          "watch": true
+        }
+      }
+    },
+    "list": [
+      {
+        "id": "dev",
+        "tools": {
+          "profile": "minimal",
+          "allow": [
+            "exec",
+            "process",
+            "read",
+            "write",
+            "edit",
+            "sessions_list",
+            "sessions_history",
+            "sessions_send",
+            "sessions_spawn",
+            "subagents",
+            "session_status",
+            "memory_search",
+            "memory_get",
+            "web_search",
+            "web_fetch",
+            "browser"
+          ],
+          "elevated": {
+            "enabled": false
+          },
+          "sandbox": {
+            "tools": {
+              "allow": [
+                "exec",
+                "process",
+                "read",
+                "write",
+                "edit",
+                "sessions_list",
+                "sessions_history",
+                "sessions_send",
+                "sessions_spawn",
+                "subagents",
+                "session_status",
+                "memory_search",
+                "memory_get",
+                "web_search",
+                "web_fetch",
+                "browser"
+              ]
+            }
+          }
+        },
+        "sandbox": {
+          "mode": "all",
+          "scope": "session",
+          "workspaceAccess": "rw",
+          "browser": {
+            "allowHostControl": false
+          }
+        }
+      }
+    ]
+  },
+  "skills": {
+    "load": {
+      "watch": true,
+      "watchDebounceMs": 250
+    },
+    "entries": {
+      "research-first-secure-coding": {
+        "enabled": true
+      },
+      "paper-reading-formula-tutor": {
+        "enabled": true
+      },
+      "writing-feishu-copilot": {
+        "enabled": true
+      },
+      "memory-curator": {
+        "enabled": true
+      }
+    }
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "boot-md": {
+          "enabled": true
+        },
+        "bootstrap-extra-files": {
+          "enabled": true
+        },
+        "session-memory": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "approvals": {
+    "exec": {
+      "enabled": true,
+      "mode": "session",
+      "agentFilter": [
+        "main",
+        "dev"
+      ]
+    }
+  },
+  "plugins": {
+    "slots": {
+      "memory": "memory-core"
+    },
+    "entries": {
+      "feishu": {
+        "enabled": true
+      },
+      "discord": {
+        "enabled": true
+      }
+    }
+  },
+  "browser": {
+    "enabled": true,
+    "defaultProfile": "openclaw",
+    "ssrfPolicy": {
+      "dangerouslyAllowPrivateNetwork": false
+    }
+  },
+  "cron": {
+    "enabled": true
+  }
+}
