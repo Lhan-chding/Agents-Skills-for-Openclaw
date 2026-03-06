@@ -34,13 +34,22 @@ Use one primary skill by default. Mix only when the user explicitly asks.
 
 ### `prompt-control` (soft policy, not hard enforcement)
 
-Before high-risk actions, ask for explicit user confirmation:
+Before tool actions, ask for explicit user confirmation and wait for user approval:
 
-- shell/terminal execution
+- file search/list/read
 - file create/edit/delete
+- source code file modify/refactor/rename (all code changes)
+- shell/terminal execution
+- web search / browser navigation / external fetch
 - dependency install/update
 - database migration/deployment/infrastructure changes
-- broad web crawling and external script execution
+
+Approval workflow:
+
+1. State the intended action in one sentence.
+2. State expected impact (files/commands/network).
+3. Ask for explicit approval.
+4. Execute only after user approves in the same session.
 
 ## Delivery Rules
 

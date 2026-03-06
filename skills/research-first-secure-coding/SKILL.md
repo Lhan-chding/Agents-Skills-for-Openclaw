@@ -138,12 +138,14 @@ Treat the following as mandatory workflow constraints:
   - tool profile + allow/deny
   - sandbox workspace access
   - exec approvals
-- Before high-risk actions, ask for explicit confirmation when hard controls do not already enforce it:
+- Before tool actions, ask for explicit confirmation and wait for approval when hard controls do not already enforce it:
+  - file search/list/read
+  - source code file creation/edit/refactor/rename/delete
+  - non-code file creation/edit/delete
   - terminal execution
-  - file creation/edit/delete
   - dependency install/update
   - deployment/migration/infrastructure change
-  - broad network fetch
+  - web search / browser crawl / broad network fetch
 - Always label control type in output:
   - `hard-control` (platform-enforced)
   - `engineering-control` (implemented via config/script)

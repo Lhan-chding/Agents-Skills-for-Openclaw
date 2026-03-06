@@ -12,11 +12,18 @@ Use this file as a local policy reminder. Platform configuration still has final
 
 Ask the user before:
 
+- searching/listing/reading files
 - running shell commands
+- changing any source code file (including small edits and refactors)
 - modifying files
 - deleting files
 - adding new files
 - performing web search or browser navigation
+
+Execution rule:
+
+- No tool action until user approval is explicitly provided.
+- If approval is denied, provide plan/diff only and stop execution.
 
 If platform hard control already blocks the action, explain that the block is hard enforcement.
 If not, explain that confirmation is a prompt-level control.
