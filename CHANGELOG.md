@@ -2,6 +2,14 @@
 
 All notable changes to this capability pack are documented here.
 
+## [2.0.1] - 2026-03-07
+
+### Fixed
+
+- `workspace-templates/BOOT.md` now explicitly requires the literal template path `memory/YYYY-MM-DD.template.md`.
+- Added a hard note to avoid deriving `memory/<today>.template.md`, which caused `read` ENOENT errors in startup checks.
+- Clarified startup step ordering so memory initialization behavior is deterministic in Feishu-driven sessions.
+
 ## [2.0.0] - 2026-03-07
 
 ### Added
