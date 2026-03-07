@@ -119,7 +119,7 @@ Add member by phone (ID resolve + add flow):
 sh ./scripts/Run-FeishuGroupFlow.sh \
   --flow AddOnly \
   --chat-id "oc_xxx" \
-  --add-member-mobiles "18780986576" \
+  --add-member-mobiles "********" \
   --member-id-type open_id
 ```
 
