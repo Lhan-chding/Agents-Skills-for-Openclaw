@@ -60,8 +60,7 @@
             "feishu_bitable_create_record",
             "feishu_bitable_update_record",
             "feishu_bitable_create_app",
-            "feishu_bitable_create_field",
-            "feishu_perm"
+            "feishu_bitable_create_field"
           ],
           "elevated": {
             "enabled": false
@@ -97,8 +96,7 @@
                 "feishu_bitable_create_record",
                 "feishu_bitable_update_record",
                 "feishu_bitable_create_app",
-                "feishu_bitable_create_field",
-                "feishu_perm"
+                "feishu_bitable_create_field"
               ]
             }
           }

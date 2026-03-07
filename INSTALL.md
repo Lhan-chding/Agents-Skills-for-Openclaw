@@ -69,6 +69,15 @@ cd $RepoRoot
   -PatchPath ".\\config\\openclaw.channels.optional.json"
 ```
 
+Enable sensitive `feishu_perm` only when needed:
+
+```powershell
+cd $RepoRoot
+.\scripts\Apply-OpenClawPatch.ps1 `
+  -OpenClawHome $OpenClawHome `
+  -PatchPath ".\\config\\openclaw.feishu.perm.optional.json"
+```
+
 ## 8) Feishu group admin bridge (optional)
 
 For create-group / add-members operations:

@@ -1,0 +1,28 @@
+{
+  "channels": {
+    "feishu": {
+      "tools": {
+        "perm": true
+      }
+    }
+  },
+  "agents": {
+    "list": [
+      {
+        "id": "dev",
+        "tools": {
+          "allow": [
+            "feishu_perm"
+          ],
+          "sandbox": {
+            "tools": {
+              "allow": [
+                "feishu_perm"
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

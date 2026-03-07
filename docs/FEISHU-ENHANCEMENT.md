@@ -68,7 +68,7 @@
 - Replace placeholders with real credentials locally.
 - Do not commit secrets to repo.
 - Ensure dev allowlist includes Feishu plugin tools (`feishu_chat`, `feishu_doc`, `feishu_drive`, `feishu_wiki`, `feishu_app_scopes`, `feishu_bitable_*`).
-- If you need `feishu_perm`, set `channels.feishu.tools.perm=true` intentionally (sensitive operation).
+- If you need `feishu_perm`, apply `config/openclaw.feishu.perm.optional.json` intentionally (sensitive operation).
 
 ## 6. Suggested Rollout
 

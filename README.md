@@ -169,6 +169,7 @@ Cron 示例见：`config/cron-jobs.examples.md`。
    - 先 `-DryRun` 预演
    - 再显式审批执行（`-ApprovalText APPROVE_FEISHU_CHAT_ADMIN`）
 4. 需要有效的 `FEISHU_APP_ID` / `FEISHU_APP_SECRET`，并在飞书开放平台授予对应 IM scopes。
+5. `feishu_perm` 属于敏感权限工具，默认不启用；需要时再应用 `config/openclaw.feishu.perm.optional.json`。
 
 ## 7. 验收标准（建议逐条检查）
 
@@ -232,6 +233,12 @@ openclaw.cmd skills check
 ```
 
 确认 `dev` allowlist 包含 `feishu_chat`、`feishu_doc`、`feishu_app_scopes` 等工具。
+若你要启用 `feishu_perm`，再额外应用：
+
+```powershell
+.\scripts\Apply-OpenClawPatch.ps1 `
+  -PatchPath ".\\config\\openclaw.feishu.perm.optional.json"
+```
 
 ## 10. 许可证
 
