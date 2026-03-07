@@ -2,6 +2,19 @@
 
 All notable changes to this capability pack are documented here.
 
+## [2.0.4] - 2026-03-07
+
+### Fixed
+
+- Resolved sandbox skill-read path-escape issue by installing custom skills to `~/.openclaw/workspace/skills` in addition to managed `~/.openclaw/skills`.
+- Updated verification logic to require workspace skill copies (sandbox-readable) for all core custom skills.
+
+### Docs
+
+- Added troubleshooting guidance for:
+  - `read failed: Path escapes sandbox root ... .openclaw\\skills\\...\\SKILL.md`
+- Clarified install behavior: dual skill sync (managed + workspace).
+
 ## [2.0.3] - 2026-03-07
 
 ### Added

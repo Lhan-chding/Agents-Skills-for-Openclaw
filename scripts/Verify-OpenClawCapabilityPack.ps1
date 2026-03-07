@@ -45,7 +45,8 @@ function Get-Value {
     return $cur
 }
 
-$skillsPath = Join-Path $OpenClawHome "skills"
+$managedSkillsPath = Join-Path $OpenClawHome "skills"
+$workspaceSkillsPath = Join-Path $Workspace "skills"
 $expectedSkills = @(
     "research-first-secure-coding",
     "paper-reading-formula-tutor",
@@ -54,8 +55,12 @@ $expectedSkills = @(
     "memory-curator"
 )
 foreach ($skill in $expectedSkills) {
-    $path = Join-Path $skillsPath $skill
-    Add-Check -Name "skill:$skill" -Ok (Test-Path $path) -Detail $path
+    $workspacePath = Join-Path $workspaceSkillsPath $skill
+    $managedPath = Join-Path $managedSkillsPath $skill
+
+    # Workspace skills are required to avoid sandbox path-escape reads.
+    Add-Check -Name "skill.workspace:$skill" -Ok (Test-Path $workspacePath) -Detail $workspacePath
+    Add-Check -Name "skill.managed:$skill" -Ok (Test-Path $managedPath) -Detail $managedPath -Required $false
 }
 
 $workspaceFiles = @("AGENTS.md", "TOOLS.md", "MEMORY.md", "BOOT.md")

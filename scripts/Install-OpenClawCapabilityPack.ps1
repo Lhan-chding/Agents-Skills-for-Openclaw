@@ -13,7 +13,8 @@ $ErrorActionPreference = "Stop"
 $packRoot = Split-Path -Parent $PSScriptRoot
 $skillsSrc = Join-Path $packRoot "skills"
 $workspaceTpl = Join-Path $packRoot "workspace-templates"
-$skillsDst = Join-Path $OpenClawHome "skills"
+$managedSkillsDst = Join-Path $OpenClawHome "skills"
+$workspaceSkillsDst = Join-Path $Workspace "skills"
 $memoryDir = Join-Path $Workspace "memory"
 $backupRoot = Join-Path $OpenClawHome "backups\capability-pack"
 
@@ -77,8 +78,9 @@ function Copy-Path {
 }
 
 Ensure-Dir -Path $OpenClawHome
-Ensure-Dir -Path $skillsDst
 Ensure-Dir -Path $Workspace
+Ensure-Dir -Path $managedSkillsDst
+Ensure-Dir -Path $workspaceSkillsDst
 Ensure-Dir -Path $memoryDir
 
 $skillNames = @(
@@ -91,8 +93,12 @@ $skillNames = @(
 
 foreach ($name in $skillNames) {
     $src = Join-Path $skillsSrc $name
-    $dst = Join-Path $skillsDst $name
-    Copy-Path -Source $src -Destination $dst
+    $managedDst = Join-Path $managedSkillsDst $name
+    $workspaceDst = Join-Path $workspaceSkillsDst $name
+
+    # Keep managed copy for compatibility and workspace copy for sandbox-readable routing.
+    Copy-Path -Source $src -Destination $managedDst
+    Copy-Path -Source $src -Destination $workspaceDst
 }
 
 $workspaceFiles = @("AGENTS.md", "TOOLS.md", "MEMORY.md", "BOOT.md")

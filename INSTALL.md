@@ -28,6 +28,11 @@ cd $RepoRoot
   -Force
 ```
 
+The installer syncs custom skills to both:
+
+- `%USERPROFILE%\.openclaw\skills\...` (managed copy)
+- `%USERPROFILE%\.openclaw\workspace\skills\...` (sandbox-readable copy, preferred by OpenClaw)
+
 ## 4) Verify
 
 ```powershell

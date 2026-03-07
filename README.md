@@ -255,3 +255,31 @@ openclaw.cmd skills check
 ## 10. 许可证
 
 Apache-2.0，见 [LICENSE](./LICENSE)。
+
+## 11. Sandbox Path-Escape Quick Fix
+
+When you see:
+
+`read failed: Path escapes sandbox root ... .openclaw\skills\...\SKILL.md`
+
+Cause:
+
+1. sandbox root is `%USERPROFILE%\.openclaw\workspace`
+2. skill resolved from `%USERPROFILE%\.openclaw\skills\...` (outside workspace root)
+
+Fix:
+
+```powershell
+cd $RepoRoot
+.\scripts\Update-OpenClawCapabilityPack.ps1 `
+  -OpenClawHome $OpenClawHome `
+  -Workspace $Workspace
+
+openclaw.cmd gateway restart
+openclaw.cmd skills info feishu-chat-admin-bridge --json
+```
+
+Expected:
+
+1. `source` = `openclaw-workspace`
+2. `filePath` starts with `%USERPROFILE%\.openclaw\workspace\skills\...`
