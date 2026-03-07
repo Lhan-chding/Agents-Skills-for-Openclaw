@@ -1,16 +1,19 @@
-# OpenClaw Capability Pack v2
+﻿# OpenClaw Capability Pack v2
 
-面向 OpenClaw 的本地能力包，目标是：
+一个面向 OpenClaw 的本地能力包，目标是：
 
-1. 保留 `research-first-secure-coding` 核心工作流
-2. 增强论文阅读与公式精讲
-3. 增强写作/飞书协作
-4. 在安全优先前提下，支持飞书群管理桥接（建群/拉人）
-5. 保持本地 memory，不默认上云
+1. 安全优先的代码协作（research-first secure coding）
+2. 论文阅读与公式精讲
+3. 写作与飞书协作
+4. 本地记忆沉淀与压缩
+5. 飞书群管理桥接（建群/拉人脚本）
+6. 定时提醒与自动总结（cron）
 
-## 1. 能力概览
+本仓库不是通用 SDK，而是可直接用于 OpenClaw 的 skills + scripts + config bundle。
 
-包含 5 个技能：
+## 1. 能力总览
+
+包含 5 个核心 skill：
 
 1. `research-first-secure-coding`
 2. `paper-reading-formula-tutor`
@@ -18,66 +21,36 @@
 4. `feishu-chat-admin-bridge`
 5. `memory-curator`
 
-重点新增：
+核心脚本：
 
-- 飞书群管理桥接支持 `手机号/邮箱 -> 用户ID -> 拉人`
-- Linux sandbox 可执行 `.sh` 脚本（不再依赖 `powershell`）
-- 工作区路径镜像脚本，解决 `Path escapes sandbox root`
+1. `scripts/Install-OpenClawCapabilityPack.ps1`
+2. `scripts/Update-OpenClawCapabilityPack.ps1`
+3. `scripts/Verify-OpenClawCapabilityPack.ps1`
+4. `scripts/Invoke-FeishuChatAdmin.ps1` / `.sh`
+5. `scripts/Run-FeishuGroupFlow.ps1` / `.sh`
+6. `scripts/Setup-DailyPlanWeatherCron.ps1`
+7. `scripts/Sync-WorkspacePath.ps1`
 
-## 2. 安全分层（请区分）
-
-### 2.1 官方硬机制（平台强制）
-
-1. OpenClaw `approvals.exec`
-2. sandbox 根路径隔离（workspace root）
-3. tools allowlist / denylist
-
-### 2.2 工程实现（本仓库脚本实现）
-
-1. 飞书桥接脚本默认先 dry-run
-2. 变更类动作要求 `APPROVE_FEISHU_CHAT_ADMIN`
-3. 外部路径导入要求 `APPROVE_WORKSPACE_IMPORT`
-4. 安装脚本自动同步 skills + bridge scripts 到 workspace
-
-### 2.3 软约束（prompt 级，不是硬防护）
-
-1. 执行前解释风险
-2. 请求用户确认
-3. 失败后给可执行修复建议
-
-## 3. 目录结构
+## 2. 目录结构
 
 ```text
 openclaw-capability-pack/
   config/
   docs/
   scripts/
-    Install-OpenClawCapabilityPack.ps1
-    Update-OpenClawCapabilityPack.ps1
-    Verify-OpenClawCapabilityPack.ps1
-    Invoke-FeishuChatAdmin.ps1
-    Run-FeishuGroupFlow.ps1
-    Invoke-FeishuChatAdmin.sh
-    Run-FeishuGroupFlow.sh
-    Sync-WorkspacePath.ps1
   skills/
-    research-first-secure-coding/
-    paper-reading-formula-tutor/
-    writing-feishu-copilot/
-    feishu-chat-admin-bridge/
-    memory-curator/
   workspace-templates/
   README.md
   INSTALL.md
   SECURITY-MODEL.md
 ```
 
-## 4. 快速安装（Windows + PowerShell）
+## 3. 快速安装（Windows + PowerShell）
 
 ```powershell
-$RepoRoot = "<YOUR_CAPABILITY_PACK_PATH>"
-$OpenClawHome = "$env:USERPROFILE\.openclaw"
-$Workspace = "$OpenClawHome\workspace"
+$RepoRoot = "<YOUR_PATH>\\openclaw-capability-pack"
+$OpenClawHome = "$env:USERPROFILE\\.openclaw"
+$Workspace = "$OpenClawHome\\workspace"
 
 Set-ExecutionPolicy -Scope Process Bypass -Force
 cd $RepoRoot
@@ -88,7 +61,7 @@ cd $RepoRoot
   -Force
 ```
 
-安装后校验：
+验证：
 
 ```powershell
 .\scripts\Verify-OpenClawCapabilityPack.ps1 `
@@ -96,125 +69,112 @@ cd $RepoRoot
   -Workspace $Workspace
 
 openclaw.cmd skills check
-openclaw.cmd sandbox explain --agent dev
-openclaw.cmd gateway health
+openclaw.cmd cron list
 ```
 
-## 5. 飞书群管理桥接（重点）
+## 4. 每日提醒与晨间简报（你当前需求）
 
-官方 API 参考（主依据）：
+你要的流程：
 
-1. tenant access token:
-   - https://open.feishu.cn/document/server-docs/authentication-management/access-token/tenant_access_token_internal
-2. batch_get_id（手机号/邮箱查 ID）:
-   - https://open.feishu.cn/document/server-docs/contact-v3/user/batch_get_id
-3. chat create / add members:
-   - https://open.feishu.cn/document/server-docs/im-v1/chat/create
-   - https://open.feishu.cn/document/server-docs/im-v1/chat-members/create
+1. 每晚 22:00 提醒你提交次日计划
+2. 每早 07:30 发送“今日安排 + 天气 + 是否带伞”
 
-### 5.1 在 Linux sandbox 中执行（推荐）
-
-Dry-run：
-
-```sh
-sh ./scripts/Run-FeishuGroupFlow.sh \
-  --flow AddOnly \
-  --chat-id "oc_xxx" \
-  --add-member-mobiles "18780986576" \
-  --member-id-type open_id
-```
-
-执行（需审批口令）：
-
-```sh
-sh ./scripts/Run-FeishuGroupFlow.sh \
-  --flow AddOnly \
-  --chat-id "oc_xxx" \
-  --add-member-mobiles "18780986576" \
-  --member-id-type open_id \
-  --execute \
-  --approval-text APPROVE_FEISHU_CHAT_ADMIN
-```
-
-### 5.2 Windows 主机回退
+一键创建/更新：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-FeishuGroupFlow.ps1 `
-  -Flow AddOnly `
-  -ChatId "oc_xxx" `
-  -AddMemberMobiles "18780986576" `
-  -Execute `
-  -ApprovalText APPROVE_FEISHU_CHAT_ADMIN
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Setup-DailyPlanWeatherCron.ps1 `
+  -To "<FEISHU_OPEN_ID_OR_CHAT_ID>" `
+  -Location "Chengdu Shuangliu" `
+  -Timezone "Asia/Shanghai" `
+  -Force
 ```
 
-## 6. 彻底规避 Path Escapes 报错
+说明：
 
-你看到过的报错：
+1. 22:00 任务名：`daily-plan-reminder-2200`
+2. 07:30 任务名：`daily-plan-weather-summary-0730`
+3. 天气数据默认从联网接口获取（脚本内使用 `wttr.in`）
 
-- `Path escapes sandbox root`
-
-根因：
-
-- sandbox 只能访问 workspace 根路径，不能直接访问 `C:\...` 宿主路径。
-
-正确做法：先导入再使用。
-
-Dry-run 导入：
+查看任务：
 
 ```powershell
-.\scripts\Sync-WorkspacePath.ps1 `
-  -SourcePath "C:\path\to\file-or-folder" `
-  -DryRun
+openclaw.cmd cron list
+openclaw.cmd cron list --json
 ```
 
-审批后导入：
+手动触发测试：
 
 ```powershell
-.\scripts\Sync-WorkspacePath.ps1 `
-  -SourcePath "C:\path\to\file-or-folder" `
-  -ApprovalText APPROVE_WORKSPACE_IMPORT
+openclaw.cmd cron run <JOB_ID>
 ```
 
-然后让 agent 只使用导入后的 workspace 路径。
+## 5. 飞书群管理（建群/拉人）
 
-## 7. Memory 本地化
+OpenClaw 当前内置 `feishu_chat` 以查询为主。建群/拉人通过桥接脚本完成：
 
-通过 `config/openclaw.patch.json` 约束：
+1. `scripts/Invoke-FeishuChatAdmin.ps1` / `.sh`
+2. `scripts/Run-FeishuGroupFlow.ps1` / `.sh`
+
+推荐流程：
+
+1. 先 Dry Run
+2. 看请求参数是否正确
+3. 再执行变更（需审批文本）
+
+变更审批文本：`APPROVE_FEISHU_CHAT_ADMIN`
+
+## 6. 本地记忆策略
+
+已按本地优先设计：
 
 1. `memorySearch.provider = local`
 2. `memorySearch.fallback = none`
-3. `session-memory` / `boot-md` / `bootstrap-extra-files` 启用
+3. 日记忆：`memory/YYYY-MM-DD.md`
+4. 长期记忆：`MEMORY.md`
+5. 压缩规则：`memory/COMPRESSION-RULES.md`
 
-日记忆模板：
+## 7. 安全边界（务必区分）
 
-- `workspace-templates/memory/YYYY-MM-DD.template.md`
+硬机制（平台强制）：
 
-压缩规则：
+1. OpenClaw approvals
+2. sandbox 隔离
+3. tools allow/deny
 
-- `workspace-templates/memory/COMPRESSION-RULES.md`
+工程实现（本仓库实现）：
+
+1. dry-run first 脚本流程
+2. 风险操作审批文本
+3. 安装/验证/回滚脚本
+
+软约束（prompt 级）：
+
+1. 先确认再执行
+2. 默认最小改动
+3. 风险提示后再继续
 
 ## 8. 常见问题
 
-1. `/bin/sh: powershell: not found`
-- 用 `.sh` 脚本，不要在 sandbox 内跑 `powershell -File ...`
+1. `Path escapes sandbox root`
+- 先用 `Sync-WorkspacePath.ps1` 导入到 workspace，再操作。
 
-2. `Path escapes sandbox root`
-- 先运行 `Sync-WorkspacePath.ps1` 把外部路径导入 workspace
+2. `/bin/sh: powershell: not found`
+- 在 Linux sandbox 里用 `.sh` 脚本，不要直接调用 PowerShell。
 
-3. 飞书返回 `99991663`
-- 一般是 scope 不足、应用未完成审批或租户策略限制
+3. 飞书返回 `99991672` / `99991663`
+- 通常是应用权限 scope 未开通、未发布，或租户策略限制。
 
-4. `tenant_access_token` 失败
-- 检查 App ID/App Secret 和应用发布状态
+4. cron 看不到任务
+- 以宿主机 `openclaw.cmd cron list --json` 为准。
 
-## 9. 参考文档
+## 9. 相关文档
 
-1. OpenClaw Configuration:
-   - https://docs.openclaw.ai/guides/configuration
-2. OpenClaw Skills:
-   - https://docs.openclaw.ai/guides/skills
-3. Feishu Open Platform（见第 5 节链接）
+1. [INSTALL.md](./INSTALL.md)
+2. [SECURITY-MODEL.md](./SECURITY-MODEL.md)
+3. [docs/FEISHU-ENHANCEMENT.md](./docs/FEISHU-ENHANCEMENT.md)
+4. [docs/FEISHU-CHAT-ADMIN.md](./docs/FEISHU-CHAT-ADMIN.md)
+5. [docs/VALIDATION-AND-RELEASE.md](./docs/VALIDATION-AND-RELEASE.md)
 
 ## 10. 许可证
 
-`Apache-2.0`，见 [LICENSE](./LICENSE)。
+`Apache-2.0`，见 [LICENSE](./LICENSE)

@@ -18,7 +18,8 @@ MOBILES=""
 EMAILS=""
 
 MEMBER_ID_TYPE="open_id"
-CHAT_MODE="private"
+CHAT_MODE="group"
+CHAT_TYPE="private"
 APPROVAL_TEXT=""
 DRY_RUN=0
 
@@ -42,7 +43,8 @@ CreateChat:
   --description <text>
   --owner-id <owner_id>
   --user-ids <id1,id2>
-  --chat-mode <private|public>
+  --chat-mode <group>              (legacy private/public is auto-mapped to --chat-type)
+  --chat-type <private|public>
   --approval-text APPROVE_FEISHU_CHAT_ADMIN
 
 AddMembers:
@@ -125,7 +127,19 @@ extract_json_number() {
 
 extract_ids_csv() {
   raw="${1:-}"
-  matches="$(printf '%s' "$raw" | tr '\n' ' ' | grep -oE '"(user_id|open_id|union_id)"[[:space:]]*:[[:space:]]*"[^"]+"' || true)"
+  preferred="${2:-}"
+
+  matches=""
+  case "$preferred" in
+    open_id|user_id|union_id)
+      matches="$(printf '%s' "$raw" | tr '\n' ' ' | grep -oE "\"$preferred\"[[:space:]]*:[[:space:]]*\"[^\"]+\"" || true)"
+      ;;
+  esac
+
+  if [ -z "$matches" ]; then
+    matches="$(printf '%s' "$raw" | tr '\n' ' ' | grep -oE '"(open_id|user_id|union_id)"[[:space:]]*:[[:space:]]*"[^"]+"' || true)"
+  fi
+
   if [ -z "$matches" ]; then
     printf ''
     return
@@ -266,6 +280,10 @@ while [ "$#" -gt 0 ]; do
       CHAT_MODE="${2:-}"
       shift 2
       ;;
+    --chat-type)
+      CHAT_TYPE="${2:-}"
+      shift 2
+      ;;
     --approval-text)
       APPROVAL_TEXT="${2:-}"
       shift 2
@@ -318,11 +336,32 @@ case "$MEMBER_ID_TYPE" in
     ;;
 esac
 
+# Backward compatibility: legacy mode used private/public for chat_mode.
+if [ "$ACTION" = "CreateChat" ]; then
+  case "$CHAT_MODE" in
+    private|public)
+      if [ "$CHAT_TYPE" = "private" ]; then
+        CHAT_TYPE="$CHAT_MODE"
+      fi
+      CHAT_MODE="group"
+      ;;
+  esac
+fi
+
 case "$CHAT_MODE" in
+  group)
+    ;;
+  *)
+    echo "Invalid --chat-mode. Use group." >&2
+    exit 2
+    ;;
+esac
+
+case "$CHAT_TYPE" in
   private|public)
     ;;
   *)
-    echo "Invalid --chat-mode. Use private or public." >&2
+    echo "Invalid --chat-type. Use private or public." >&2
     exit 2
     ;;
 esac
@@ -405,7 +444,7 @@ fi
 if [ "$ACTION" = "CreateChat" ]; then
   uri="$BASE_URL/open-apis/im/v1/chats?user_id_type=$MEMBER_ID_TYPE"
   users_json="$(csv_to_json_array "$USER_IDS")"
-  body="$(printf '{"name":"%s","description":"%s","owner_id":"%s","user_id_list":%s,"chat_mode":"%s"}' "$(json_escape "$CHAT_NAME")" "$(json_escape "$DESCRIPTION")" "$(json_escape "$OWNER_ID")" "$users_json" "$(json_escape "$CHAT_MODE")")"
+  body="$(printf '{"name":"%s","description":"%s","owner_id":"%s","user_id_list":%s,"chat_mode":"%s","chat_type":"%s"}' "$(json_escape "$CHAT_NAME")" "$(json_escape "$DESCRIPTION")" "$(json_escape "$OWNER_ID")" "$users_json" "$(json_escape "$CHAT_MODE")" "$(json_escape "$CHAT_TYPE")")"
   if [ "$DRY_RUN" -eq 1 ]; then
     print_preview "$ACTION" "POST" "$uri" "$body"
     exit 0
@@ -465,7 +504,7 @@ if [ "$ACTION" = "BatchGetIds" ]; then
   response="$(api_call "POST" "$uri" "$token" "$body")"
   code="$(extract_json_number "$response" "code")"
   msg="$(extract_json_string "$response" "msg")"
-  ids_csv="$(extract_ids_csv "$response")"
+  ids_csv="$(extract_ids_csv "$response" "$MEMBER_ID_TYPE")"
 
   if [ -z "$code" ]; then
     code="999999"

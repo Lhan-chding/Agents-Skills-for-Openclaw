@@ -2,6 +2,33 @@
 
 All notable changes to this capability pack are documented here.
 
+## [2.0.6] - 2026-03-07
+
+### Added
+
+- New cron setup script for daily planning assistant flow:
+  - `scripts/Setup-DailyPlanWeatherCron.ps1`
+- One-command provisioning for:
+  - 22:00 nightly reminder to submit tomorrow plan
+  - 07:30 morning summary with weather and umbrella suggestion
+
+### Changed
+
+- `scripts/Install-OpenClawCapabilityPack.ps1` now syncs `Setup-DailyPlanWeatherCron.ps1` into workspace scripts.
+- `scripts/Verify-OpenClawCapabilityPack.ps1` now validates the new cron setup script exists in workspace.
+- `scripts/Invoke-FeishuChatAdmin.ps1` and `.sh`:
+  - aligned create-chat payload to `chat_mode=group` + `chat_type=private/public`
+  - kept backward compatibility for legacy mode arguments
+  - improved ID-resolution preference to follow requested `member_id_type`
+- `scripts/Run-FeishuGroupFlow.ps1` and `.sh`:
+  - aligned to new create-chat payload fields
+  - improved resolved-ID selection consistency by requested id type
+
+### Docs
+
+- Added cron usage example in `config/cron-jobs.examples.md` for daily plan/weather flow.
+- Expanded `INSTALL.md` and `docs/FEISHU-ENHANCEMENT.md` with setup steps for the 22:00 + 07:30 schedule.
+
 ## [2.0.5] - 2026-03-07
 
 ### Added

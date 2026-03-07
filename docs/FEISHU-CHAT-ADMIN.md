@@ -22,6 +22,7 @@ Primary references used by this pack:
    - https://open.feishu.cn/document/server-docs/contact-v3/user/batch_get_id
 3. IM create chat and add chat members:
    - https://open.feishu.cn/document/server-docs/im-v1/chat/create
+   - https://open.feishu.cn/document/server-docs/group/chat/create
    - https://open.feishu.cn/document/server-docs/im-v1/chat-members/create
 4. OpenClaw sandbox + tool + approvals (hard controls):
    - https://docs.openclaw.ai/guides/configuration
@@ -51,6 +52,9 @@ Primary references used by this pack:
 2. `FEISHU_APP_ID` and `FEISHU_APP_SECRET` available.
 3. OpenClaw `dev` agent can run `exec` and approval flow is enabled.
 4. Scripts are synced into `~/.openclaw/workspace/scripts`.
+5. If the agent says "no read/exec tool", verify:
+   - `agents.list.dev.tools.allow` contains `exec`, `read`, `write`, `edit`
+   - script paths are under workspace root (not host absolute paths)
 
 ## 5) Commands
 
@@ -161,9 +165,14 @@ Optional daily memory append:
    - Use `.sh` scripts in sandbox, not `powershell -File ...`
 2. `Path escapes sandbox root`:
    - Import first with `Sync-WorkspacePath.ps1`, then use workspace path.
-3. `99991663`:
+3. Agent says it cannot create/read files:
+   - Sync scripts into workspace:
+     - `~/.openclaw/workspace/scripts/Run-FeishuGroupFlow.ps1`
+     - `~/.openclaw/workspace/scripts/Invoke-FeishuChatAdmin.ps1`
+   - Restart gateway after config/tool updates.
+4. `99991663`:
    - Usually missing scope, app not approved, or tenant policy restriction.
-4. `tenant_access_token` fails:
+5. `tenant_access_token` fails:
    - Check App ID/Secret and app deployment status.
-5. `chat_id` invalid:
+6. `chat_id` invalid:
    - Verify same tenant and correct `oc_...` chat ID.

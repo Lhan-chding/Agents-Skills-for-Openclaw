@@ -74,7 +74,8 @@ $workspaceBridgeScripts = @(
     "Run-FeishuGroupFlow.ps1",
     "Invoke-FeishuChatAdmin.sh",
     "Run-FeishuGroupFlow.sh",
-    "Sync-WorkspacePath.ps1"
+    "Sync-WorkspacePath.ps1",
+    "Setup-DailyPlanWeatherCron.ps1"
 )
 foreach ($script in $workspaceBridgeScripts) {
     $path = Join-Path $Workspace "scripts\$script"

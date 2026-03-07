@@ -19,7 +19,8 @@ ADD_MEMBER_MOBILES=""
 ADD_MEMBER_EMAILS=""
 
 MEMBER_ID_TYPE="open_id"
-CHAT_MODE="private"
+CHAT_MODE="group"
+CHAT_TYPE="private"
 
 EXECUTE=0
 APPROVAL_TEXT=""
@@ -56,7 +57,8 @@ Create options:
   --description <text>
   --owner-id <owner_id>
   --create-user-ids <id1,id2>
-  --chat-mode <private|public>
+  --chat-mode <group>              (legacy private/public is auto-mapped to --chat-type)
+  --chat-type <private|public>
 
 Add options:
   --chat-id <oc_xxx>                 (required for AddOnly)
@@ -163,7 +165,19 @@ extract_chat_id() {
 
 extract_ids_csv() {
   raw="${1:-}"
-  matches="$(printf '%s' "$raw" | tr '\n' ' ' | grep -oE '"(user_id|open_id|union_id)"[[:space:]]*:[[:space:]]*"[^"]+"' || true)"
+  preferred="${2:-}"
+
+  matches=""
+  case "$preferred" in
+    open_id|user_id|union_id)
+      matches="$(printf '%s' "$raw" | tr '\n' ' ' | grep -oE "\"$preferred\"[[:space:]]*:[[:space:]]*\"[^\"]+\"" || true)"
+      ;;
+  esac
+
+  if [ -z "$matches" ]; then
+    matches="$(printf '%s' "$raw" | tr '\n' ' ' | grep -oE '"(open_id|user_id|union_id)"[[:space:]]*:[[:space:]]*"[^"]+"' || true)"
+  fi
+
   if [ -z "$matches" ]; then
     printf ''
     return
@@ -333,6 +347,10 @@ while [ "$#" -gt 0 ]; do
       CHAT_MODE="${2:-}"
       shift 2
       ;;
+    --chat-type)
+      CHAT_TYPE="${2:-}"
+      shift 2
+      ;;
     --execute)
       EXECUTE=1
       shift 1
@@ -411,11 +429,32 @@ case "$MEMBER_ID_TYPE" in
     ;;
 esac
 
+# Backward compatibility: legacy mode used private/public for chat_mode.
+if [ "$NEED_CREATE" -eq 1 ]; then
+  case "$CHAT_MODE" in
+    private|public)
+      if [ "$CHAT_TYPE" = "private" ]; then
+        CHAT_TYPE="$CHAT_MODE"
+      fi
+      CHAT_MODE="group"
+      ;;
+  esac
+fi
+
 case "$CHAT_MODE" in
+  group)
+    ;;
+  *)
+    echo "Invalid --chat-mode. Use group." >&2
+    exit 2
+    ;;
+esac
+
+case "$CHAT_TYPE" in
   private|public)
     ;;
   *)
-    echo "Invalid --chat-mode. Use private or public." >&2
+    echo "Invalid --chat-type. Use private or public." >&2
     exit 2
     ;;
 esac
@@ -507,6 +546,7 @@ if [ "$NEED_CREATE" -eq 1 ]; then
     --user-ids "$CREATE_USER_IDS" \
     --member-id-type "$MEMBER_ID_TYPE" \
     --chat-mode "$CHAT_MODE" \
+    --chat-type "$CHAT_TYPE" \
     --dry-run
   if [ "$LAST_STEP_OK" != "1" ]; then
     DRY_FAILED=1
@@ -576,6 +616,7 @@ else
       --user-ids "$CREATE_USER_IDS" \
       --member-id-type "$MEMBER_ID_TYPE" \
       --chat-mode "$CHAT_MODE" \
+      --chat-type "$CHAT_TYPE" \
       --approval-text "$APPROVAL_TEXT"
 
     if [ "$LAST_STEP_OK" != "1" ]; then
@@ -607,7 +648,7 @@ else
     else
       resolved_csv="$(extract_json_string "$LAST_STEP_OUT" "resolved_ids_csv")"
       if [ -z "$resolved_csv" ]; then
-        resolved_csv="$(extract_ids_csv "$LAST_STEP_OUT")"
+        resolved_csv="$(extract_ids_csv "$LAST_STEP_OUT" "$MEMBER_ID_TYPE")"
       fi
       runtime_member_ids="$(merge_csv "$runtime_member_ids" "$resolved_csv")"
       resolved_member_ids="$runtime_member_ids"

@@ -149,7 +149,25 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-FeishuGroupFlo
   -ApprovalText APPROVE_FEISHU_CHAT_ADMIN
 ```
 
-## 9) Fix host-path access (`Path escapes sandbox root`)
+## 9) Daily 22:00 reminder + 07:30 plan/weather push (optional)
+
+Use one command to create/update both cron jobs:
+
+```powershell
+cd $RepoRoot
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Setup-DailyPlanWeatherCron.ps1 `
+  -To "REPLACE_WITH_FEISHU_CHAT_ID_OR_OPEN_ID" `
+  -Location "Chengdu" `
+  -Timezone "Asia/Shanghai" `
+  -Force
+```
+
+Default behavior:
+
+1. 22:00: remind you to send tomorrow's plan.
+2. 07:30: summarize today's tasks from your latest plan, include weather and umbrella recommendation.
+
+## 10) Fix host-path access (`Path escapes sandbox root`)
 
 When user gives `C:\...` paths, import into workspace first:
 
@@ -168,7 +186,7 @@ After approval:
   -ApprovalText APPROVE_WORKSPACE_IMPORT
 ```
 
-## 10) Rollback
+## 11) Rollback
 
 ```powershell
 cd $RepoRoot
@@ -177,7 +195,7 @@ cd $RepoRoot
 
 Backups are stored under `%USERPROFILE%\.openclaw\backups\capability-pack`.
 
-## 11) Warning repair shortcut
+## 12) Warning repair shortcut
 
 ```powershell
 cd $RepoRoot
@@ -186,7 +204,7 @@ cd $RepoRoot
   -Workspace $Workspace
 ```
 
-## 12) Post-install checks
+## 13) Post-install checks
 
 ```powershell
 openclaw.cmd skills check

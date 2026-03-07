@@ -48,6 +48,26 @@
 - Group @: concise, context-aware response
 - Scheduled push: reminders, daily top-3 priorities, weekly digest
 
+## 3.1 Daily plan coach schedule (22:00 + 07:30)
+
+You can enable a two-step daily coach flow:
+
+1. 22:00 reminder:
+   - ask user to send tomorrow plan (top 3 priorities, schedule blocks, risks)
+2. 07:30 morning brief:
+   - summarize today tasks from latest plan
+   - include weather and umbrella recommendation
+
+Use:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Setup-DailyPlanWeatherCron.ps1 `
+  -To "REPLACE_WITH_FEISHU_CHAT_ID_OR_OPEN_ID" `
+  -Location "Chengdu" `
+  -Timezone "Asia/Shanghai" `
+  -Force
+```
+
 ## 4. Security Boundaries
 
 ### Hard mechanisms

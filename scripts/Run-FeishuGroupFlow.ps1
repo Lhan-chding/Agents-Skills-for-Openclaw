@@ -19,8 +19,11 @@ param(
     [ValidateSet("open_id", "user_id", "union_id")]
     [string]$MemberIdType = "open_id",
 
+    [ValidateSet("group", "private", "public")]
+    [string]$ChatMode = "group",
+
     [ValidateSet("private", "public")]
-    [string]$ChatMode = "private",
+    [string]$ChatType = "private",
 
     [switch]$Execute,
     [string]$ApprovalText = "",
@@ -196,7 +199,10 @@ function Resolve-ChatIdFromResponse {
 }
 
 function Resolve-MemberIdsFromBatchResponse {
-    param([object]$JsonResponse)
+    param(
+        [object]$JsonResponse,
+        [string]$RequestedIdType
+    )
 
     if ($null -eq $JsonResponse) { return @() }
 
@@ -210,9 +216,19 @@ function Resolve-MemberIdsFromBatchResponse {
             $data = $raw.data
             if ($null -ne $data -and $data.PSObject.Properties.Name -contains "user_list") {
                 $ids = @()
+                $orderedFields = @()
+                if ([string]::IsNullOrWhiteSpace($RequestedIdType) -eq $false) {
+                    $orderedFields += $RequestedIdType
+                }
+                foreach ($f in @("open_id", "user_id", "union_id")) {
+                    if ($orderedFields -notcontains $f) {
+                        $orderedFields += $f
+                    }
+                }
+
                 foreach ($u in @($data.user_list)) {
                     if ($null -eq $u) { continue }
-                    foreach ($field in @("user_id", "open_id", "union_id")) {
+                    foreach ($field in $orderedFields) {
                         if ($u.PSObject.Properties.Name -contains $field) {
                             $value = [string]$u.$field
                             if ([string]::IsNullOrWhiteSpace($value) -eq $false) {
@@ -260,6 +276,14 @@ $needAdd = $Flow -in @("CreateAndAdd", "AddOnly")
 $needBatchResolve = ($AddMemberMobiles.Count -gt 0) -or ($AddMemberEmails.Count -gt 0)
 
 if ($needCreate) {
+    # Backward compatibility: older flow used ChatMode=private/public.
+    if ($ChatMode -in @("private", "public")) {
+        if ($PSBoundParameters.ContainsKey("ChatType") -eq $false) {
+            $ChatType = $ChatMode
+        }
+        $ChatMode = "group"
+    }
+
     Assert-Required ([string]::IsNullOrWhiteSpace($ChatName) -eq $false) "-ChatName is required for $Flow."
     Assert-Required ([string]::IsNullOrWhiteSpace($OwnerId) -eq $false) "-OwnerId is required for $Flow."
     Assert-Required ($CreateUserIds.Count -gt 0) "-CreateUserIds must include at least one user for $Flow."
@@ -303,6 +327,7 @@ $report = [ordered]@{
     domain = $Domain
     memberIdType = $MemberIdType
     chatMode = $ChatMode
+    chatType = $ChatType
     inputs = [ordered]@{
         chatName = $ChatName
         ownerId = $OwnerId
@@ -335,6 +360,7 @@ if ($needCreate) {
         UserIds = $CreateUserIds
         MemberIdType = $MemberIdType
         ChatMode = $ChatMode
+        ChatType = $ChatType
         DryRun = $true
     }
     $dryCreate = Invoke-BridgeAction -ActionParams $createDryArgs
@@ -402,6 +428,7 @@ else {
             UserIds = $CreateUserIds
             MemberIdType = $MemberIdType
             ChatMode = $ChatMode
+            ChatType = $ChatType
             ApprovalText = $ApprovalText
         }
         $execCreate = Invoke-BridgeAction -ActionParams $createExecArgs
@@ -439,7 +466,7 @@ else {
             $report.final.reason = "BatchGetIds failed."
         }
         else {
-            $resolvedIds = Resolve-MemberIdsFromBatchResponse -JsonResponse $execResolve.json
+            $resolvedIds = Resolve-MemberIdsFromBatchResponse -JsonResponse $execResolve.json -RequestedIdType $MemberIdType
             $runtimeMemberIds = Merge-UniqueValues -Base $runtimeMemberIds -Extra $resolvedIds
             $report.final.resolvedMemberIds = @($runtimeMemberIds)
         }

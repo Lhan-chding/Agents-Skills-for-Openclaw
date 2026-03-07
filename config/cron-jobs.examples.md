@@ -66,3 +66,20 @@ openclaw.cmd cron status
 openclaw.cmd cron run --name "daily-top3-priorities"
 openclaw.cmd cron rm --name "oneshot-follow-up"
 ```
+
+## Night Reminder + Morning Plan/Weather Push (Feishu)
+
+Install/update both jobs with one command:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Setup-DailyPlanWeatherCron.ps1 `
+  -To "REPLACE_WITH_FEISHU_CHAT_ID_OR_OPEN_ID" `
+  -Location "Chengdu" `
+  -Timezone "Asia/Shanghai" `
+  -Force
+```
+
+Behavior:
+
+- 22:00 every day: remind you to send tomorrow's plan.
+- 07:30 next morning: summarize today's tasks from your latest plan and include weather + umbrella advice.

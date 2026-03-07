@@ -19,8 +19,11 @@ param(
     [ValidateSet("open_id", "user_id", "union_id")]
     [string]$MemberIdType = "open_id",
 
+    [ValidateSet("group", "private", "public")]
+    [string]$ChatMode = "group",
+
     [ValidateSet("private", "public")]
-    [string]$ChatMode = "private",
+    [string]$ChatType = "private",
 
     [string]$ApprovalText = "",
     [switch]$DryRun
@@ -83,22 +86,29 @@ function Build-IdResolutionSummary {
     )
 
     $resolved = @()
+    $orderedFields = @()
+    if ([string]::IsNullOrWhiteSpace($RequestedIdType) -eq $false) {
+        $orderedFields += $RequestedIdType
+    }
+    foreach ($f in @("open_id", "user_id", "union_id")) {
+        if ($orderedFields -notcontains $f) {
+            $orderedFields += $f
+        }
+    }
+
     if ($null -ne $ApiResponse -and $ApiResponse.PSObject.Properties.Name -contains "data") {
         $data = $ApiResponse.data
         if ($null -ne $data -and $data.PSObject.Properties.Name -contains "user_list") {
             foreach ($u in @($data.user_list)) {
                 if ($null -eq $u) { continue }
-                if ($u.PSObject.Properties.Name -contains "user_id" -and [string]::IsNullOrWhiteSpace([string]$u.user_id) -eq $false) {
-                    $resolved += [string]$u.user_id
-                    continue
-                }
-                if ($u.PSObject.Properties.Name -contains "open_id" -and [string]::IsNullOrWhiteSpace([string]$u.open_id) -eq $false) {
-                    $resolved += [string]$u.open_id
-                    continue
-                }
-                if ($u.PSObject.Properties.Name -contains "union_id" -and [string]::IsNullOrWhiteSpace([string]$u.union_id) -eq $false) {
-                    $resolved += [string]$u.union_id
-                    continue
+                foreach ($field in $orderedFields) {
+                    if ($u.PSObject.Properties.Name -contains $field) {
+                        $value = [string]$u.$field
+                        if ([string]::IsNullOrWhiteSpace($value) -eq $false) {
+                            $resolved += $value
+                            break
+                        }
+                    }
                 }
             }
         }
@@ -167,6 +177,14 @@ if ($Action -in @("GetChatInfo", "ListMembers", "AddMembers")) {
 if ($Action -eq "CreateChat") {
     Assert-Required ([string]::IsNullOrWhiteSpace($ChatName) -eq $false) "-ChatName is required for CreateChat."
     Assert-Required ($UserIds.Count -gt 0) "-UserIds must include at least one member for CreateChat."
+
+    # Backward compatibility: older flow used ChatMode=private/public.
+    if ($ChatMode -in @("private", "public")) {
+        if ($PSBoundParameters.ContainsKey("ChatType") -eq $false) {
+            $ChatType = $ChatMode
+        }
+        $ChatMode = "group"
+    }
 }
 
 if ($Action -eq "AddMembers") {
@@ -216,6 +234,7 @@ switch ($Action) {
             owner_id = $OwnerId
             user_id_list = $UserIds
             chat_mode = $ChatMode
+            chat_type = $ChatType
         }
         if ($DryRun) {
             [pscustomobject]@{
