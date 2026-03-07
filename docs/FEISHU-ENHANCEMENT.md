@@ -7,6 +7,7 @@
 - built-in OpenClaw `feishu_chat` is currently read-oriented (`info`, `members`)
 - built-in `feishu_perm` is for doc/drive permissions, not group member admin
 - group create/member add should use the bridge script:
+  - `scripts/Run-FeishuGroupFlow.ps1` (one-click flow)
   - `scripts/Invoke-FeishuChatAdmin.ps1`
   - `skills/feishu-chat-admin-bridge/SKILL.md`
 

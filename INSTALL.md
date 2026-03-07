@@ -80,26 +80,29 @@ cd $RepoRoot
 
 ## 8) Feishu group admin bridge (optional)
 
-For create-group / add-members operations:
+For create-group / add-members operations (one-click flow):
 
 ```powershell
 cd $RepoRoot
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Invoke-FeishuChatAdmin.ps1 `
-  -Action CreateChat `
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-FeishuGroupFlow.ps1 `
+  -Flow CreateAndAdd `
   -ChatName "Research Group" `
   -OwnerId "ou_xxx" `
-  -UserIds "ou_a","ou_b" `
+  -CreateUserIds "ou_a","ou_b" `
+  -AddMemberIds "ou_c","ou_d" `
   -DryRun
 ```
 
 Then execute with approval text:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Invoke-FeishuChatAdmin.ps1 `
-  -Action CreateChat `
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-FeishuGroupFlow.ps1 `
+  -Flow CreateAndAdd `
   -ChatName "Research Group" `
   -OwnerId "ou_xxx" `
-  -UserIds "ou_a","ou_b" `
+  -CreateUserIds "ou_a","ou_b" `
+  -AddMemberIds "ou_c","ou_d" `
+  -Execute `
   -ApprovalText APPROVE_FEISHU_CHAT_ADMIN
 ```
 

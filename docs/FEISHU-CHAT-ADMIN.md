@@ -88,6 +88,43 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Invoke-FeishuChatA
   -ApprovalText APPROVE_FEISHU_CHAT_ADMIN
 ```
 
+## 4.1 One-click flow (recommended)
+
+Use `Run-FeishuGroupFlow.ps1` to run a full chain:
+
+1. auto dry-run
+2. approval gate check
+3. execute (optional)
+4. write-back report (`.json` + `.md`)
+
+Dry-run only:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-FeishuGroupFlow.ps1 `
+  -Flow CreateAndAdd `
+  -ChatName "Research Group" `
+  -OwnerId "ou_xxx" `
+  -CreateUserIds "ou_a","ou_b" `
+  -AddMemberIds "ou_c","ou_d"
+```
+
+Execute after approval:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-FeishuGroupFlow.ps1 `
+  -Flow CreateAndAdd `
+  -ChatName "Research Group" `
+  -OwnerId "ou_xxx" `
+  -CreateUserIds "ou_a","ou_b" `
+  -AddMemberIds "ou_c","ou_d" `
+  -Execute `
+  -ApprovalText APPROVE_FEISHU_CHAT_ADMIN
+```
+
+The script writes reports by default to:
+
+- `%USERPROFILE%\.openclaw\workspace\memory\feishu-group-flow\`
+
 ## 5) Troubleshooting
 
 1. `99991663` / permission errors: check app scopes and app approval status in Feishu Open Platform.

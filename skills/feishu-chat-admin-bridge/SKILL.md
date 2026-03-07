@@ -20,6 +20,7 @@ Do not use this skill for normal Q&A or document editing.
 1. Built-in `feishu_chat` tool is read-oriented in current OpenClaw release (primarily `info` and `members`).
 2. Group mutation operations are executed via local script:
    - `scripts/Invoke-FeishuChatAdmin.ps1`
+   - `scripts/Run-FeishuGroupFlow.ps1` (one-click orchestrator)
 3. Script uses official Feishu Open API and requires app credentials.
 
 ## Security gates
@@ -34,6 +35,30 @@ Treat these as mandatory:
 If user does not approve, stop after dry-run.
 
 ## Commands
+
+Recommended one-click flow (dry-run first, then execute, then write-back report):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-FeishuGroupFlow.ps1 `
+  -Flow CreateAndAdd `
+  -ChatName "My Research Group" `
+  -OwnerId "ou_xxx" `
+  -CreateUserIds "ou_a","ou_b" `
+  -AddMemberIds "ou_c","ou_d"
+```
+
+Execute after approval:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-FeishuGroupFlow.ps1 `
+  -Flow CreateAndAdd `
+  -ChatName "My Research Group" `
+  -OwnerId "ou_xxx" `
+  -CreateUserIds "ou_a","ou_b" `
+  -AddMemberIds "ou_c","ou_d" `
+  -Execute `
+  -ApprovalText APPROVE_FEISHU_CHAT_ADMIN
+```
 
 Dry-run create group:
 

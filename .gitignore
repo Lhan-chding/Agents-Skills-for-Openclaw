@@ -12,6 +12,7 @@ Thumbs.db
 *.log
 *.tmp
 *.bak
+tmp/
 
 # OpenClaw local runtime artifacts (if generated inside repo accidentally)
 .openclaw/

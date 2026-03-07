@@ -163,13 +163,25 @@ Cron 示例见：`config/cron-jobs.examples.md`。
 
 1. OpenClaw 当前内置 `feishu_chat` 工具是读操作边界（群信息、群成员查询），不是完整群管理工具。
 2. 如果你需要“建群/拉人”，请使用：
-   - `scripts/Invoke-FeishuChatAdmin.ps1`
+   - `scripts/Run-FeishuGroupFlow.ps1`（推荐，一键编排）
+   - `scripts/Invoke-FeishuChatAdmin.ps1`（底层动作脚本）
    - `skills/feishu-chat-admin-bridge/SKILL.md`
 3. 安全流程：
    - 先 `-DryRun` 预演
    - 再显式审批执行（`-ApprovalText APPROVE_FEISHU_CHAT_ADMIN`）
 4. 需要有效的 `FEISHU_APP_ID` / `FEISHU_APP_SECRET`，并在飞书开放平台授予对应 IM scopes。
 5. `feishu_perm` 属于敏感权限工具，默认不启用；需要时再应用 `config/openclaw.feishu.perm.optional.json`。
+
+一键 dry-run 示例：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-FeishuGroupFlow.ps1 `
+  -Flow CreateAndAdd `
+  -ChatName "Research Group" `
+  -OwnerId "ou_xxx" `
+  -CreateUserIds "ou_a","ou_b" `
+  -AddMemberIds "ou_c","ou_d"
+```
 
 ## 7. 验收标准（建议逐条检查）
 

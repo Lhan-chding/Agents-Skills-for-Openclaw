@@ -2,6 +2,22 @@
 
 All notable changes to this capability pack are documented here.
 
+## [2.0.3] - 2026-03-07
+
+### Added
+
+- New one-click flow script: `scripts/Run-FeishuGroupFlow.ps1`
+  - auto dry-run
+  - approval token gate
+  - optional execute
+  - write-back reports (`.json` + `.md`)
+  - optional append to daily memory
+
+### Changed
+
+- Updated Feishu admin docs and skill instructions to recommend `Run-FeishuGroupFlow.ps1` as the primary workflow.
+- Updated install and README examples for one-click group create/member add flow.
+
 ## [2.0.2] - 2026-03-07
 
 ### Fixed
