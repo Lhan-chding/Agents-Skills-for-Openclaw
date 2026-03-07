@@ -30,7 +30,7 @@
       {
         "id": "dev",
         "tools": {
-          "profile": "minimal",
+          "profile": "full",
           "allow": [
             "exec",
             "process",
@@ -47,7 +47,21 @@
             "memory_get",
             "web_search",
             "web_fetch",
-            "browser"
+            "browser",
+            "feishu_doc",
+            "feishu_chat",
+            "feishu_wiki",
+            "feishu_drive",
+            "feishu_app_scopes",
+            "feishu_bitable_get_meta",
+            "feishu_bitable_list_fields",
+            "feishu_bitable_list_records",
+            "feishu_bitable_get_record",
+            "feishu_bitable_create_record",
+            "feishu_bitable_update_record",
+            "feishu_bitable_create_app",
+            "feishu_bitable_create_field",
+            "feishu_perm"
           ],
           "elevated": {
             "enabled": false
@@ -70,7 +84,21 @@
                 "memory_get",
                 "web_search",
                 "web_fetch",
-                "browser"
+                "browser",
+                "feishu_doc",
+                "feishu_chat",
+                "feishu_wiki",
+                "feishu_drive",
+                "feishu_app_scopes",
+                "feishu_bitable_get_meta",
+                "feishu_bitable_list_fields",
+                "feishu_bitable_list_records",
+                "feishu_bitable_get_record",
+                "feishu_bitable_create_record",
+                "feishu_bitable_update_record",
+                "feishu_bitable_create_app",
+                "feishu_bitable_create_field",
+                "feishu_perm"
               ]
             }
           }
@@ -99,6 +127,9 @@
         "enabled": true
       },
       "writing-feishu-copilot": {
+        "enabled": true
+      },
+      "feishu-chat-admin-bridge": {
         "enabled": true
       },
       "memory-curator": {

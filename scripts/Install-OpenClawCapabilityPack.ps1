@@ -85,6 +85,7 @@ $skillNames = @(
     "research-first-secure-coding",
     "paper-reading-formula-tutor",
     "writing-feishu-copilot",
+    "feishu-chat-admin-bridge",
     "memory-curator"
 )
 

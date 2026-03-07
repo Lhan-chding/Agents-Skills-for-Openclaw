@@ -1,63 +1,121 @@
-# Install Guide (Windows + PowerShell)
+﻿# Install Guide (Windows + PowerShell)
 
 ## 1) Prerequisites
 
-- OpenClaw 已安装并可执行 `openclaw.cmd --version`
-- 具备本地写权限：
-  - `%USERPROFILE%\.openclaw`
-  - `%USERPROFILE%\.openclaw\workspace`
+1. OpenClaw CLI is installed and available:
+   - `openclaw.cmd --version`
+2. You can write to:
+   - `%USERPROFILE%\.openclaw`
+   - `%USERPROFILE%\.openclaw\workspace`
 
-## 2) One-shot install
+## 2) Define common paths
+
+```powershell
+$RepoRoot = "<YOUR_REPO_PATH>\\openclaw-capability-pack"
+$OpenClawHome = "$env:USERPROFILE\\.openclaw"
+$Workspace = "$OpenClawHome\\workspace"
+```
+
+## 3) One-shot install
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass -Force
-cd "c:\Users\LHan1\Desktop\Paper learning\PDE-Net-PDE-Net"
+cd $RepoRoot
 
-.\openclaw-capability-pack\scripts\Install-OpenClawCapabilityPack.ps1 -Force
-.\openclaw-capability-pack\scripts\Verify-OpenClawCapabilityPack.ps1
+.\scripts\Install-OpenClawCapabilityPack.ps1 `
+  -OpenClawHome $OpenClawHome `
+  -Workspace $Workspace `
+  -Force
 ```
 
-## 3) Dry run (no mutation)
+## 4) Verify
 
 ```powershell
-.\openclaw-capability-pack\scripts\Install-OpenClawCapabilityPack.ps1 -Force -DryRun
+cd $RepoRoot
+.\scripts\Verify-OpenClawCapabilityPack.ps1 `
+  -OpenClawHome $OpenClawHome `
+  -Workspace $Workspace
 ```
 
-## 4) Update existing setup
+## 5) Dry-run (no mutation)
 
 ```powershell
-.\openclaw-capability-pack\scripts\Update-OpenClawCapabilityPack.ps1
-.\openclaw-capability-pack\scripts\Verify-OpenClawCapabilityPack.ps1
+cd $RepoRoot
+.\scripts\Install-OpenClawCapabilityPack.ps1 `
+  -OpenClawHome $OpenClawHome `
+  -Workspace $Workspace `
+  -Force `
+  -DryRun
 ```
 
-## 5) Optional channels patch
-
-1. 先替换 `config/openclaw.channels.optional.json` 中的占位符。  
-2. 再执行：
+## 6) Update existing setup
 
 ```powershell
-.\openclaw-capability-pack\scripts\Apply-OpenClawPatch.ps1 `
-  -PatchPath ".\openclaw-capability-pack\config\openclaw.channels.optional.json"
+cd $RepoRoot
+.\scripts\Update-OpenClawCapabilityPack.ps1 `
+  -OpenClawHome $OpenClawHome `
+  -Workspace $Workspace
 ```
 
-## 6) Rollback
+## 7) Optional channels patch
+
+1. Edit `config/openclaw.channels.optional.json` placeholders.
+2. Apply:
 
 ```powershell
-.\openclaw-capability-pack\scripts\Rollback-OpenClawConfig.ps1
+cd $RepoRoot
+.\scripts\Apply-OpenClawPatch.ps1 `
+  -OpenClawHome $OpenClawHome `
+  -PatchPath ".\\config\\openclaw.channels.optional.json"
 ```
 
-脚本默认从 `%USERPROFILE%\.openclaw\backups\capability-pack` 选最近备份恢复。
+## 8) Feishu group admin bridge (optional)
 
-## 7) Warning repair shortcut
+For create-group / add-members operations:
 
 ```powershell
-.\openclaw-capability-pack\scripts\Fix-ToolsProfileWarnings.ps1
-.\openclaw-capability-pack\scripts\Verify-OpenClawCapabilityPack.ps1
+cd $RepoRoot
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Invoke-FeishuChatAdmin.ps1 `
+  -Action CreateChat `
+  -ChatName "Research Group" `
+  -OwnerId "ou_xxx" `
+  -UserIds "ou_a","ou_b" `
+  -DryRun
 ```
 
-## 8) Post-install checks
+Then execute with approval text:
 
-- 重启 OpenClaw gateway
-- `openclaw.cmd skills check`
-- `openclaw.cmd sandbox explain --agent dev`
-- `openclaw.cmd security audit --json`
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Invoke-FeishuChatAdmin.ps1 `
+  -Action CreateChat `
+  -ChatName "Research Group" `
+  -OwnerId "ou_xxx" `
+  -UserIds "ou_a","ou_b" `
+  -ApprovalText APPROVE_FEISHU_CHAT_ADMIN
+```
+
+## 9) Rollback
+
+```powershell
+cd $RepoRoot
+.\scripts\Rollback-OpenClawConfig.ps1 -OpenClawHome $OpenClawHome
+```
+
+Backups are stored under `%USERPROFILE%\.openclaw\backups\capability-pack`.
+
+## 10) Warning repair shortcut
+
+```powershell
+cd $RepoRoot
+.\scripts\Fix-ToolsProfileWarnings.ps1 `
+  -OpenClawHome $OpenClawHome `
+  -Workspace $Workspace
+```
+
+## 11) Post-install checks
+
+```powershell
+openclaw.cmd skills check
+openclaw.cmd sandbox explain --agent dev
+openclaw.cmd gateway health
+```

@@ -1,10 +1,11 @@
 # OpenClaw Workspace Agent Policy
 
-This workspace is optimized for four assistant capabilities:
+This workspace is optimized for five assistant capabilities:
 
 - coding and secure engineering: `research-first-secure-coding`
 - paper reading and formula tutoring: `paper-reading-formula-tutor`
 - writing and Feishu collaboration: `writing-feishu-copilot`
+- Feishu group administration bridge: `feishu-chat-admin-bridge`
 - local memory maintenance: `memory-curator`
 
 ## Skill Routing
@@ -14,6 +15,7 @@ Use one primary skill by default. Mix only when the user explicitly asks.
 - Coding/implementation/refactor/review/security analysis: `research-first-secure-coding`
 - Paper explanation/derivation/discretization/loss/experiment interpretation: `paper-reading-formula-tutor`
 - Doc rewrite/terminology normalization/Feishu collaboration: `writing-feishu-copilot`
+- Feishu group create/member add operations: `feishu-chat-admin-bridge`
 - MEMORY.md maintenance/daily-memory compression/archive promotion: `memory-curator`
 
 ## Control Layers

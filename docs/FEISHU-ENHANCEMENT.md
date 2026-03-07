@@ -2,6 +2,14 @@
 
 ## 1. Current Landable Capabilities
 
+### Tool boundary (important)
+
+- built-in OpenClaw `feishu_chat` is currently read-oriented (`info`, `members`)
+- built-in `feishu_perm` is for doc/drive permissions, not group member admin
+- group create/member add should use the bridge script:
+  - `scripts/Invoke-FeishuChatAdmin.ps1`
+  - `skills/feishu-chat-admin-bridge/SKILL.md`
+
 ### Private chat QA
 
 - user asks directly in DM
@@ -59,6 +67,8 @@
 - Use `config/openclaw.channels.optional.json` as template only.
 - Replace placeholders with real credentials locally.
 - Do not commit secrets to repo.
+- Ensure dev allowlist includes Feishu plugin tools (`feishu_chat`, `feishu_doc`, `feishu_drive`, `feishu_wiki`, `feishu_app_scopes`, `feishu_bitable_*`).
+- If you need `feishu_perm`, set `channels.feishu.tools.perm=true` intentionally (sensitive operation).
 
 ## 6. Suggested Rollout
 
@@ -66,3 +76,4 @@
 2. Verify DM and @mention behavior.
 3. Enable scheduled reminders.
 4. Add doc/wiki/drive/bitable workflows incrementally.
+5. For group admin automation, run bridge script in dry-run first, then execute with explicit approval text.

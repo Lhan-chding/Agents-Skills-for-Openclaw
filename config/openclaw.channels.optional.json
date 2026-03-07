@@ -6,7 +6,15 @@
       "appSecret": "REPLACE_WITH_FEISHU_APP_SECRET",
       "connectionMode": "websocket",
       "domain": "feishu",
-      "groupPolicy": "allowlist"
+      "groupPolicy": "allowlist",
+      "tools": {
+        "doc": true,
+        "chat": true,
+        "wiki": true,
+        "drive": true,
+        "scopes": true,
+        "perm": false
+      }
     },
     "discord": {
       "enabled": true,

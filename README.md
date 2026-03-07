@@ -97,13 +97,14 @@ openclaw.cmd skills check
 3. 写作默认“修改建议 + 可直接粘贴版本”
 4. 论文解释显式标注“原文/解释/推断”
 
-## 4. 四个 Skills
+## 4. 五个 Skills
 
 | Skill | 作用 | 典型触发 |
 | --- | --- | --- |
 | `research-first-secure-coding` | 研究优先 + 安全工程 | 设计/实现/重构/审查 + auth/secrets/shell/db/deploy |
 | `paper-reading-formula-tutor` | 论文精读 + 推导教学 | 章节总结、逐符号解释、逐步推导、离散化/loss/边界条件 |
 | `writing-feishu-copilot` | 文档协作与改写 | “修改建议 + 可直接粘贴版本”、术语统一、结构整理 |
+| `feishu-chat-admin-bridge` | 飞书群管理桥接 | 建群/拉人等需要调用飞书 Open API 的场景 |
 | `memory-curator` | 本地记忆维护 | 日记忆压缩、长期记忆升格、冲突标注 |
 
 ## 5. 常用命令（按场景）
@@ -158,6 +159,17 @@ cd $RepoRoot
 
 Cron 示例见：`config/cron-jobs.examples.md`。
 
+### 6.1 Feishu 群管理（建群/拉人）注意事项
+
+1. OpenClaw 当前内置 `feishu_chat` 工具是读操作边界（群信息、群成员查询），不是完整群管理工具。
+2. 如果你需要“建群/拉人”，请使用：
+   - `scripts/Invoke-FeishuChatAdmin.ps1`
+   - `skills/feishu-chat-admin-bridge/SKILL.md`
+3. 安全流程：
+   - 先 `-DryRun` 预演
+   - 再显式审批执行（`-ApprovalText APPROVE_FEISHU_CHAT_ADMIN`）
+4. 需要有效的 `FEISHU_APP_ID` / `FEISHU_APP_SECRET`，并在飞书开放平台授予对应 IM scopes。
+
 ## 7. 验收标准（建议逐条检查）
 
 1. 验证脚本显示 `All required checks passed.`  
@@ -203,6 +215,23 @@ openclaw.cmd skills check
 ### Q3: 想先确保不改动再执行
 
 所有主脚本支持 `-DryRun`，先预演再落盘。
+
+### Q4: 飞书里提示“无法访问技能文件 / 无法执行 feishu-perm 建群拉人”
+
+先区分三件事：
+
+1. `feishu-perm` 是文档/云盘权限工具，不是群管理工具。
+2. 内置 `feishu_chat` 默认是读操作（群信息、成员查询），不是建群/拉人全功能。
+3. 建群/拉人要走桥接脚本：`scripts/Invoke-FeishuChatAdmin.ps1`（先 `-DryRun`，后审批执行）。
+
+再检查配置是否生效：
+
+```powershell
+openclaw.cmd sandbox explain --agent dev
+openclaw.cmd skills check
+```
+
+确认 `dev` allowlist 包含 `feishu_chat`、`feishu_doc`、`feishu_app_scopes` 等工具。
 
 ## 10. 许可证
 

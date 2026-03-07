@@ -50,6 +50,7 @@ $expectedSkills = @(
     "research-first-secure-coding",
     "paper-reading-formula-tutor",
     "writing-feishu-copilot",
+    "feishu-chat-admin-bridge",
     "memory-curator"
 )
 foreach ($skill in $expectedSkills) {
@@ -93,7 +94,7 @@ if (Test-Path $configPath) {
     Add-Check -Name "config:dev-agent-exists" -Ok ($null -ne $devAgent) -Detail "agents.list[id=dev]"
 
     if ($null -ne $devAgent) {
-        Add-Check -Name "config:dev.tools.profile=minimal" -Ok ($devAgent.tools.profile -eq "minimal") -Detail "agents.list[id=dev].tools.profile"
+        Add-Check -Name "config:dev.tools.profile=full" -Ok ($devAgent.tools.profile -eq "full") -Detail "agents.list[id=dev].tools.profile"
         Add-Check -Name "config:dev.workspace=rw" -Ok ($devAgent.sandbox.workspaceAccess -eq "rw") -Detail "agents.list[id=dev].sandbox.workspaceAccess"
 
         $allow = @()
@@ -107,6 +108,15 @@ if (Test-Path $configPath) {
             }
         }
         Add-Check -Name "config:dev.allowlist-no-apply_patch-image-cron" -Ok (-not $hasBad) -Detail ("tools.allow={0}" -f ($allow -join ","))
+
+        $feishuToolBaseline = @("feishu_chat", "feishu_doc", "feishu_app_scopes")
+        $missingFeishuTools = @()
+        foreach ($t in $feishuToolBaseline) {
+            if ($allow -notcontains $t) {
+                $missingFeishuTools += $t
+            }
+        }
+        Add-Check -Name "config:dev.allowlist-feishu-tools-enabled" -Ok ($missingFeishuTools.Count -eq 0) -Detail ("missing={0}" -f ($missingFeishuTools -join ","))
     }
 
     Add-Check -Name "config:approvals.exec.enabled=true" -Ok ((Get-Value -Obj $cfg -PathSegments @("approvals", "exec", "enabled")) -eq $true) -Detail "approvals.exec.enabled"

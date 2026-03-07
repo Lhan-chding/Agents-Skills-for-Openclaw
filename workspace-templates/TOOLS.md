@@ -32,3 +32,9 @@ If not, explain that confirmation is a prompt-level control.
 
 - Do not assume model-route-specific tools (for example `apply_patch`) are available.
 - Always check effective tool policy before relying on a capability.
+
+## Feishu Tool Boundary
+
+- `feishu_chat`: read-focused (chat info/member query), not full chat admin.
+- `feishu_perm`: doc/drive permission management, not group member admin.
+- For group create/member add, use `scripts/Invoke-FeishuChatAdmin.ps1` via explicit approval workflow.

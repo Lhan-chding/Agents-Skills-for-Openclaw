@@ -2,6 +2,23 @@
 
 All notable changes to this capability pack are documented here.
 
+## [2.0.2] - 2026-03-07
+
+### Fixed
+
+- Added Feishu plugin tools to `dev` allowlists in `config/openclaw.patch.json` so Feishu skills are actionable instead of prompt-only.
+- Switched `agents.list.dev.tools.profile` to `full` with explicit allowlist to avoid tool-injection gaps observed with `minimal`.
+- Updated optional channel template to include explicit `channels.feishu.tools` defaults.
+
+### Added
+
+- New script: `scripts/Invoke-FeishuChatAdmin.ps1` for Feishu chat admin API bridge (`GetChatInfo`, `ListMembers`, `CreateChat`, `AddMembers`).
+- New skill: `skills/feishu-chat-admin-bridge/SKILL.md` with dry-run first and approval-text gate for mutating actions.
+
+### Docs
+
+- Expanded README and `docs/FEISHU-ENHANCEMENT.md` with Feishu group admin boundary notes and bridge workflow.
+
 ## [2.0.1] - 2026-03-07
 
 ### Fixed
