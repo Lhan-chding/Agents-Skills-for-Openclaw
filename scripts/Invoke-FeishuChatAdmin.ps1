@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("GetChatInfo", "ListMembers", "CreateChat", "AddMembers")]
+    [ValidateSet("GetChatInfo", "ListMembers", "CreateChat", "AddMembers", "BatchGetIds")]
     [string]$Action,
 
     [string]$Domain = "feishu",
@@ -13,6 +13,8 @@ param(
     [string]$OwnerId,
     [string[]]$UserIds = @(),
     [string[]]$MemberIds = @(),
+    [string[]]$Mobiles = @(),
+    [string[]]$Emails = @(),
 
     [ValidateSet("open_id", "user_id", "union_id")]
     [string]$MemberIdType = "open_id",
@@ -74,6 +76,46 @@ function Expand-IdList {
     return ,$result
 }
 
+function Build-IdResolutionSummary {
+    param(
+        [object]$ApiResponse,
+        [string]$RequestedIdType
+    )
+
+    $resolved = @()
+    if ($null -ne $ApiResponse -and $ApiResponse.PSObject.Properties.Name -contains "data") {
+        $data = $ApiResponse.data
+        if ($null -ne $data -and $data.PSObject.Properties.Name -contains "user_list") {
+            foreach ($u in @($data.user_list)) {
+                if ($null -eq $u) { continue }
+                if ($u.PSObject.Properties.Name -contains "user_id" -and [string]::IsNullOrWhiteSpace([string]$u.user_id) -eq $false) {
+                    $resolved += [string]$u.user_id
+                    continue
+                }
+                if ($u.PSObject.Properties.Name -contains "open_id" -and [string]::IsNullOrWhiteSpace([string]$u.open_id) -eq $false) {
+                    $resolved += [string]$u.open_id
+                    continue
+                }
+                if ($u.PSObject.Properties.Name -contains "union_id" -and [string]::IsNullOrWhiteSpace([string]$u.union_id) -eq $false) {
+                    $resolved += [string]$u.union_id
+                    continue
+                }
+            }
+        }
+    }
+
+    $unique = @($resolved | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
+    return [ordered]@{
+        action = "BatchGetIds"
+        code = $ApiResponse.code
+        msg = $ApiResponse.msg
+        requested_id_type = $RequestedIdType
+        resolved_count = $unique.Count
+        resolved_ids = $unique
+        raw = $ApiResponse
+    }
+}
+
 function Get-TenantAccessToken {
     param(
         [string]$BaseUrl,
@@ -115,6 +157,8 @@ Assert-Approval -Action $Action -ApprovalText $ApprovalText -DryRun ([bool]$DryR
 
 $UserIds = Expand-IdList -Values $UserIds
 $MemberIds = Expand-IdList -Values $MemberIds
+$Mobiles = Expand-IdList -Values $Mobiles
+$Emails = Expand-IdList -Values $Emails
 
 if ($Action -in @("GetChatInfo", "ListMembers", "AddMembers")) {
     Assert-Required ([string]::IsNullOrWhiteSpace($ChatId) -eq $false) "-ChatId is required for $Action."
@@ -127,6 +171,10 @@ if ($Action -eq "CreateChat") {
 
 if ($Action -eq "AddMembers") {
     Assert-Required ($MemberIds.Count -gt 0) "-MemberIds must include at least one member for AddMembers."
+}
+
+if ($Action -eq "BatchGetIds") {
+    Assert-Required (($Mobiles.Count -gt 0) -or ($Emails.Count -gt 0)) "-Mobiles or -Emails is required for BatchGetIds."
 }
 
 switch ($Action) {
@@ -200,6 +248,28 @@ switch ($Action) {
         $token = Get-TenantAccessToken -BaseUrl $baseUrl -AppId $AppId -AppSecret $AppSecret
         $resp = Invoke-FeishuApi -Method Post -Uri $uri -Token $token -Body $body
         $resp | ConvertTo-Json -Depth 30
+        exit 0
+    }
+    "BatchGetIds" {
+        $uri = "$baseUrl/open-apis/contact/v3/users/batch_get_id?user_id_type=$MemberIdType"
+        $body = @{}
+        if ($Mobiles.Count -gt 0) { $body["mobiles"] = $Mobiles }
+        if ($Emails.Count -gt 0) { $body["emails"] = $Emails }
+
+        if ($DryRun) {
+            [pscustomobject]@{
+                action = $Action
+                method = "POST"
+                uri = $uri
+                body = $body
+            } | ConvertTo-Json -Depth 10
+            exit 0
+        }
+
+        $token = Get-TenantAccessToken -BaseUrl $baseUrl -AppId $AppId -AppSecret $AppSecret
+        $resp = Invoke-FeishuApi -Method Post -Uri $uri -Token $token -Body $body
+        $summary = Build-IdResolutionSummary -ApiResponse $resp -RequestedIdType $MemberIdType
+        $summary | ConvertTo-Json -Depth 50
         exit 0
     }
 }

@@ -12,9 +12,11 @@ $ErrorActionPreference = "Stop"
 
 $packRoot = Split-Path -Parent $PSScriptRoot
 $skillsSrc = Join-Path $packRoot "skills"
+$scriptsSrc = Join-Path $packRoot "scripts"
 $workspaceTpl = Join-Path $packRoot "workspace-templates"
 $managedSkillsDst = Join-Path $OpenClawHome "skills"
 $workspaceSkillsDst = Join-Path $Workspace "skills"
+$workspaceScriptsDst = Join-Path $Workspace "scripts"
 $memoryDir = Join-Path $Workspace "memory"
 $backupRoot = Join-Path $OpenClawHome "backups\capability-pack"
 
@@ -81,6 +83,7 @@ Ensure-Dir -Path $OpenClawHome
 Ensure-Dir -Path $Workspace
 Ensure-Dir -Path $managedSkillsDst
 Ensure-Dir -Path $workspaceSkillsDst
+Ensure-Dir -Path $workspaceScriptsDst
 Ensure-Dir -Path $memoryDir
 
 $skillNames = @(
@@ -99,6 +102,20 @@ foreach ($name in $skillNames) {
     # Keep managed copy for compatibility and workspace copy for sandbox-readable routing.
     Copy-Path -Source $src -Destination $managedDst
     Copy-Path -Source $src -Destination $workspaceDst
+}
+
+$bridgeScripts = @(
+    "Invoke-FeishuChatAdmin.ps1",
+    "Run-FeishuGroupFlow.ps1",
+    "Invoke-FeishuChatAdmin.sh",
+    "Run-FeishuGroupFlow.sh",
+    "Sync-WorkspacePath.ps1"
+)
+
+foreach ($scriptName in $bridgeScripts) {
+    $src = Join-Path $scriptsSrc $scriptName
+    $dst = Join-Path $workspaceScriptsDst $scriptName
+    Copy-Path -Source $src -Destination $dst
 }
 
 $workspaceFiles = @("AGENTS.md", "TOOLS.md", "MEMORY.md", "BOOT.md")

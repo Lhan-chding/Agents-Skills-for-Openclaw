@@ -13,6 +13,8 @@ param(
 
     [string]$ChatId,
     [string[]]$AddMemberIds = @(),
+    [string[]]$AddMemberMobiles = @(),
+    [string[]]$AddMemberEmails = @(),
 
     [ValidateSet("open_id", "user_id", "union_id")]
     [string]$MemberIdType = "open_id",
@@ -54,6 +56,20 @@ function Expand-IdList {
         }
     }
     return ,$result
+}
+
+function Merge-UniqueValues {
+    param(
+        [string[]]$Base,
+        [string[]]$Extra
+    )
+
+    $merged = @()
+    foreach ($v in @($Base) + @($Extra)) {
+        if ([string]::IsNullOrWhiteSpace($v)) { continue }
+        $merged += $v.Trim()
+    }
+    return @($merged | Select-Object -Unique)
 }
 
 function Resolve-DefaultWriteBackDir {
@@ -112,14 +128,51 @@ function Invoke-BridgeAction {
     }
 }
 
+function Test-BridgeStepOk {
+    param([object]$BridgeResult)
+
+    if ($null -eq $BridgeResult) { return $false }
+    if (-not $BridgeResult.ok) { return $false }
+
+    $json = $BridgeResult.json
+    if ($null -eq $json) {
+        return $true
+    }
+
+    if ($json.PSObject.Properties.Name -contains "code") {
+        try {
+            return ([int]$json.code -eq 0)
+        }
+        catch {
+            return $false
+        }
+    }
+
+    if ($json.PSObject.Properties.Name -contains "raw") {
+        $raw = $json.raw
+        if ($null -ne $raw -and $raw.PSObject.Properties.Name -contains "code") {
+            try {
+                return ([int]$raw.code -eq 0)
+            }
+            catch {
+                return $false
+            }
+        }
+    }
+
+    return $true
+}
+
 function Resolve-ChatIdFromResponse {
     param([object]$JsonResponse)
     if ($null -eq $JsonResponse) { return $null }
+
     if ($JsonResponse.PSObject.Properties.Name -contains "chat_id") {
         if ([string]::IsNullOrWhiteSpace([string]$JsonResponse.chat_id) -eq $false) {
             return [string]$JsonResponse.chat_id
         }
     }
+
     if ($JsonResponse.PSObject.Properties.Name -contains "data") {
         $data = $JsonResponse.data
         if ($null -ne $data) {
@@ -138,7 +191,43 @@ function Resolve-ChatIdFromResponse {
             }
         }
     }
+
     return $null
+}
+
+function Resolve-MemberIdsFromBatchResponse {
+    param([object]$JsonResponse)
+
+    if ($null -eq $JsonResponse) { return @() }
+
+    if ($JsonResponse.PSObject.Properties.Name -contains "resolved_ids") {
+        return @(Merge-UniqueValues -Base @() -Extra @($JsonResponse.resolved_ids))
+    }
+
+    if ($JsonResponse.PSObject.Properties.Name -contains "raw") {
+        $raw = $JsonResponse.raw
+        if ($null -ne $raw -and $raw.PSObject.Properties.Name -contains "data") {
+            $data = $raw.data
+            if ($null -ne $data -and $data.PSObject.Properties.Name -contains "user_list") {
+                $ids = @()
+                foreach ($u in @($data.user_list)) {
+                    if ($null -eq $u) { continue }
+                    foreach ($field in @("user_id", "open_id", "union_id")) {
+                        if ($u.PSObject.Properties.Name -contains $field) {
+                            $value = [string]$u.$field
+                            if ([string]::IsNullOrWhiteSpace($value) -eq $false) {
+                                $ids += $value
+                                break
+                            }
+                        }
+                    }
+                }
+                return @(Merge-UniqueValues -Base @() -Extra $ids)
+            }
+        }
+    }
+
+    return @()
 }
 
 function New-StepRecord {
@@ -163,9 +252,12 @@ Assert-Required (Test-Path $bridgeScript) "Bridge script not found: $bridgeScrip
 
 $CreateUserIds = Expand-IdList -Values $CreateUserIds
 $AddMemberIds = Expand-IdList -Values $AddMemberIds
+$AddMemberMobiles = Expand-IdList -Values $AddMemberMobiles
+$AddMemberEmails = Expand-IdList -Values $AddMemberEmails
 
 $needCreate = $Flow -in @("CreateAndAdd", "CreateOnly")
 $needAdd = $Flow -in @("CreateAndAdd", "AddOnly")
+$needBatchResolve = ($AddMemberMobiles.Count -gt 0) -or ($AddMemberEmails.Count -gt 0)
 
 if ($needCreate) {
     Assert-Required ([string]::IsNullOrWhiteSpace($ChatName) -eq $false) "-ChatName is required for $Flow."
@@ -173,7 +265,7 @@ if ($needCreate) {
     Assert-Required ($CreateUserIds.Count -gt 0) "-CreateUserIds must include at least one user for $Flow."
 }
 if ($needAdd) {
-    Assert-Required ($AddMemberIds.Count -gt 0) "-AddMemberIds must include at least one user for $Flow."
+    Assert-Required (($AddMemberIds.Count -gt 0) -or $needBatchResolve) "For add flow, provide -AddMemberIds or -AddMemberMobiles/-AddMemberEmails."
 }
 if ($Flow -eq "AddOnly") {
     Assert-Required ([string]::IsNullOrWhiteSpace($ChatId) -eq $false) "-ChatId is required for AddOnly."
@@ -185,8 +277,18 @@ if ($Execute -and $ApprovalText -ne $requiredApproval) {
 if ([string]::IsNullOrWhiteSpace($WriteBackDir)) {
     $WriteBackDir = Resolve-DefaultWriteBackDir
 }
-if (-not (Test-Path $WriteBackDir)) {
-    New-Item -ItemType Directory -Path $WriteBackDir -Force | Out-Null
+try {
+    if (-not (Test-Path $WriteBackDir)) {
+        New-Item -ItemType Directory -Path $WriteBackDir -Force | Out-Null
+    }
+}
+catch {
+    $fallbackDir = Join-Path $PSScriptRoot "..\logs\feishu-group-flow"
+    if (-not (Test-Path $fallbackDir)) {
+        New-Item -ItemType Directory -Path $fallbackDir -Force | Out-Null
+    }
+    Write-Warning "WriteBackDir unavailable. Fallback to: $fallbackDir"
+    $WriteBackDir = $fallbackDir
 }
 
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
@@ -207,12 +309,16 @@ $report = [ordered]@{
         chatId = $ChatId
         createUserIds = $CreateUserIds
         addMemberIds = $AddMemberIds
+        addMemberMobiles = $AddMemberMobiles
+        addMemberEmails = $AddMemberEmails
     }
     dryRun = @()
     execution = @()
     final = [ordered]@{
         ok = $false
+        reason = ""
         chatId = $ChatId
+        resolvedMemberIds = @()
     }
 }
 
@@ -232,23 +338,42 @@ if ($needCreate) {
         DryRun = $true
     }
     $dryCreate = Invoke-BridgeAction -ActionParams $createDryArgs
-    $report.dryRun += (New-StepRecord -Phase "dry-run" -Action "CreateChat" -Ok $dryCreate.ok -Message $dryCreate.text -Data $dryCreate.json)
+    $dryCreateOk = Test-BridgeStepOk -BridgeResult $dryCreate
+    $report.dryRun += (New-StepRecord -Phase "dry-run" -Action "CreateChat" -Ok $dryCreateOk -Message $dryCreate.text -Data $dryCreate.json)
+}
+
+if ($needAdd -and $needBatchResolve) {
+    $resolveDryArgs = @{
+        Action = "BatchGetIds"
+        Domain = $Domain
+        AppId = $AppId
+        AppSecret = $AppSecret
+        Mobiles = $AddMemberMobiles
+        Emails = $AddMemberEmails
+        MemberIdType = $MemberIdType
+        DryRun = $true
+    }
+    $dryResolve = Invoke-BridgeAction -ActionParams $resolveDryArgs
+    $dryResolveOk = Test-BridgeStepOk -BridgeResult $dryResolve
+    $report.dryRun += (New-StepRecord -Phase "dry-run" -Action "BatchGetIds" -Ok $dryResolveOk -Message $dryResolve.text -Data $dryResolve.json)
 }
 
 if ($needAdd) {
     $dryChatId = if ([string]::IsNullOrWhiteSpace($ChatId)) { "<CHAT_ID_FROM_CREATE>" } else { $ChatId }
+    $dryMemberIds = if ($AddMemberIds.Count -gt 0) { $AddMemberIds } else { @("<RESOLVED_IDS_FROM_BATCH>") }
     $addDryArgs = @{
         Action = "AddMembers"
         Domain = $Domain
         AppId = $AppId
         AppSecret = $AppSecret
         ChatId = $dryChatId
-        MemberIds = $AddMemberIds
+        MemberIds = $dryMemberIds
         MemberIdType = $MemberIdType
         DryRun = $true
     }
     $dryAdd = Invoke-BridgeAction -ActionParams $addDryArgs
-    $report.dryRun += (New-StepRecord -Phase "dry-run" -Action "AddMembers" -Ok $dryAdd.ok -Message $dryAdd.text -Data $dryAdd.json)
+    $dryAddOk = Test-BridgeStepOk -BridgeResult $dryAdd
+    $report.dryRun += (New-StepRecord -Phase "dry-run" -Action "AddMembers" -Ok $dryAddOk -Message $dryAdd.text -Data $dryAdd.json)
 }
 
 $allDryOk = @($report.dryRun | Where-Object { -not $_.ok }).Count -eq 0
@@ -263,6 +388,7 @@ elseif (-not $Execute) {
 else {
     # Phase 2: execute
     $runtimeChatId = $ChatId
+    $runtimeMemberIds = @($AddMemberIds)
 
     if ($needCreate) {
         $createExecArgs = @{
@@ -279,8 +405,9 @@ else {
             ApprovalText = $ApprovalText
         }
         $execCreate = Invoke-BridgeAction -ActionParams $createExecArgs
-        $report.execution += (New-StepRecord -Phase "execute" -Action "CreateChat" -Ok $execCreate.ok -Message $execCreate.text -Data $execCreate.json)
-        if (-not $execCreate.ok) {
+        $execCreateOk = Test-BridgeStepOk -BridgeResult $execCreate
+        $report.execution += (New-StepRecord -Phase "execute" -Action "CreateChat" -Ok $execCreateOk -Message $execCreate.text -Data $execCreate.json)
+        if (-not $execCreateOk) {
             $report.final.ok = $false
             $report.final.reason = "CreateChat failed."
         }
@@ -293,11 +420,41 @@ else {
         }
     }
 
+    if ($needAdd -and $needBatchResolve) {
+        $resolveExecArgs = @{
+            Action = "BatchGetIds"
+            Domain = $Domain
+            AppId = $AppId
+            AppSecret = $AppSecret
+            Mobiles = $AddMemberMobiles
+            Emails = $AddMemberEmails
+            MemberIdType = $MemberIdType
+        }
+        $execResolve = Invoke-BridgeAction -ActionParams $resolveExecArgs
+        $execResolveOk = Test-BridgeStepOk -BridgeResult $execResolve
+        $report.execution += (New-StepRecord -Phase "execute" -Action "BatchGetIds" -Ok $execResolveOk -Message $execResolve.text -Data $execResolve.json)
+
+        if (-not $execResolveOk) {
+            $report.final.ok = $false
+            $report.final.reason = "BatchGetIds failed."
+        }
+        else {
+            $resolvedIds = Resolve-MemberIdsFromBatchResponse -JsonResponse $execResolve.json
+            $runtimeMemberIds = Merge-UniqueValues -Base $runtimeMemberIds -Extra $resolvedIds
+            $report.final.resolvedMemberIds = @($runtimeMemberIds)
+        }
+    }
+
     if ($needAdd) {
         if ([string]::IsNullOrWhiteSpace($runtimeChatId)) {
             $report.execution += (New-StepRecord -Phase "execute" -Action "AddMembers" -Ok $false -Message "AddMembers skipped: chat_id unavailable." -Data $null)
             $report.final.ok = $false
             $report.final.reason = "AddMembers skipped due to missing chat_id."
+        }
+        elseif ($runtimeMemberIds.Count -eq 0) {
+            $report.execution += (New-StepRecord -Phase "execute" -Action "AddMembers" -Ok $false -Message "AddMembers skipped: no resolved member IDs." -Data $null)
+            $report.final.ok = $false
+            $report.final.reason = "AddMembers skipped due to empty member ID set."
         }
         else {
             $addExecArgs = @{
@@ -306,13 +463,14 @@ else {
                 AppId = $AppId
                 AppSecret = $AppSecret
                 ChatId = $runtimeChatId
-                MemberIds = $AddMemberIds
+                MemberIds = $runtimeMemberIds
                 MemberIdType = $MemberIdType
                 ApprovalText = $ApprovalText
             }
             $execAdd = Invoke-BridgeAction -ActionParams $addExecArgs
-            $report.execution += (New-StepRecord -Phase "execute" -Action "AddMembers" -Ok $execAdd.ok -Message $execAdd.text -Data $execAdd.json)
-            if (-not $execAdd.ok) {
+            $execAddOk = Test-BridgeStepOk -BridgeResult $execAdd
+            $report.execution += (New-StepRecord -Phase "execute" -Action "AddMembers" -Ok $execAddOk -Message $execAdd.text -Data $execAdd.json)
+            if (-not $execAddOk) {
                 $report.final.ok = $false
                 $report.final.reason = "AddMembers failed."
             }
@@ -338,6 +496,7 @@ $md += "- Execute: $([bool]$Execute)"
 $md += "- Final OK: $($report.final.ok)"
 $md += "- Reason: $($report.final.reason)"
 $md += "- Chat ID: $($report.final.chatId)"
+$md += "- Resolved Member IDs: $($report.final.resolvedMemberIds -join ',')"
 $md += "- Started: $($report.startedAt)"
 $md += "- Finished: $($report.finishedAt)"
 $md += ""
@@ -375,6 +534,7 @@ if ($WriteBackDailyMemory) {
         $append += "- final_ok: $($report.final.ok)"
         $append += "- reason: $($report.final.reason)"
         $append += "- chat_id: $($report.final.chatId)"
+        $append += "- resolved_member_ids: $($report.final.resolvedMemberIds -join ',')"
         $append += "- report_json: $jsonPath"
         $append += "- report_md: $mdPath"
         Add-Content -Path $targetDaily -Value ($append -join "`n")
@@ -384,7 +544,9 @@ if ($WriteBackDailyMemory) {
 Write-Host "DryRun completed: $allDryOk"
 Write-Host "Executed: $([bool]$Execute)"
 Write-Host "Final OK: $($report.final.ok)"
+Write-Host "Reason: $($report.final.reason)"
 Write-Host "Chat ID: $($report.final.chatId)"
+Write-Host "Resolved Member IDs: $($report.final.resolvedMemberIds -join ',')"
 Write-Host "Report JSON: $jsonPath"
 Write-Host "Report MD:   $mdPath"
 

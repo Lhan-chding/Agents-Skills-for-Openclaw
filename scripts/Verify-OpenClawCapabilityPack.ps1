@@ -69,6 +69,18 @@ foreach ($file in $workspaceFiles) {
     Add-Check -Name "workspace:$file" -Ok (Test-Path $path) -Detail $path
 }
 
+$workspaceBridgeScripts = @(
+    "Invoke-FeishuChatAdmin.ps1",
+    "Run-FeishuGroupFlow.ps1",
+    "Invoke-FeishuChatAdmin.sh",
+    "Run-FeishuGroupFlow.sh",
+    "Sync-WorkspacePath.ps1"
+)
+foreach ($script in $workspaceBridgeScripts) {
+    $path = Join-Path $Workspace "scripts\$script"
+    Add-Check -Name "workspace-script:$script" -Ok (Test-Path $path) -Detail $path
+}
+
 $today = Get-Date -Format "yyyy-MM-dd"
 $todayMemory = Join-Path $Workspace "memory\$today.md"
 Add-Check -Name "memory:daily-file" -Ok (Test-Path $todayMemory) -Detail $todayMemory
@@ -177,6 +189,16 @@ if ($null -ne $cli) {
     }
     catch {
         Add-Check -Name "advisory:openclaw.skills.check-ran" -Ok $false -Detail $_.Exception.Message -Required $false
+    }
+
+    try {
+        $skillInfoRaw = & openclaw.cmd skills info feishu-chat-admin-bridge --json 2>$null
+        $skillInfoText = [string]$skillInfoRaw
+        $isWorkspaceSource = $skillInfoText -match "\\.openclaw[\\/]+workspace[\\/]+skills"
+        Add-Check -Name "advisory:skills-info-from-workspace" -Ok $isWorkspaceSource -Detail "openclaw.cmd skills info feishu-chat-admin-bridge --json" -Required $false
+    }
+    catch {
+        Add-Check -Name "advisory:skills-info-from-workspace" -Ok $false -Detail $_.Exception.Message -Required $false
     }
 }
 else {

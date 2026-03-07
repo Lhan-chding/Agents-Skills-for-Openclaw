@@ -7,7 +7,9 @@
 - built-in OpenClaw `feishu_chat` is currently read-oriented (`info`, `members`)
 - built-in `feishu_perm` is for doc/drive permissions, not group member admin
 - group create/member add should use the bridge script:
-  - `scripts/Run-FeishuGroupFlow.ps1` (one-click flow)
+  - `scripts/Run-FeishuGroupFlow.sh` (Linux sandbox default)
+  - `scripts/Invoke-FeishuChatAdmin.sh`
+  - `scripts/Run-FeishuGroupFlow.ps1` (Windows host fallback)
   - `scripts/Invoke-FeishuChatAdmin.ps1`
   - `skills/feishu-chat-admin-bridge/SKILL.md`
 
@@ -57,6 +59,7 @@
 - channel config kept optional
 - minimal plugin baseline
 - script-based verification
+- host-path import helper for sandbox compatibility (`scripts/Sync-WorkspacePath.ps1`)
 
 ### Soft mechanisms
 
@@ -78,3 +81,4 @@
 3. Enable scheduled reminders.
 4. Add doc/wiki/drive/bitable workflows incrementally.
 5. For group admin automation, run bridge script in dry-run first, then execute with explicit approval text.
+6. For host absolute paths (`C:\...`), import to workspace first, then operate on workspace paths only.

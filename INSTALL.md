@@ -1,4 +1,4 @@
-﻿# Install Guide (Windows + PowerShell)
+# Install Guide (Windows + PowerShell)
 
 ## 1) Prerequisites
 
@@ -32,6 +32,10 @@ The installer syncs custom skills to both:
 
 - `%USERPROFILE%\.openclaw\skills\...` (managed copy)
 - `%USERPROFILE%\.openclaw\workspace\skills\...` (sandbox-readable copy, preferred by OpenClaw)
+
+It also syncs bridge scripts to:
+
+- `%USERPROFILE%\.openclaw\workspace\scripts\...`
 
 ## 4) Verify
 
@@ -85,7 +89,41 @@ cd $RepoRoot
 
 ## 8) Feishu group admin bridge (optional)
 
-For create-group / add-members operations (one-click flow):
+Inside OpenClaw Linux sandbox, prefer `sh` scripts (avoid `powershell not found`):
+
+```sh
+sh ./scripts/Run-FeishuGroupFlow.sh \
+  --flow CreateAndAdd \
+  --chat-name "Research Group" \
+  --owner-id "ou_xxx" \
+  --create-user-ids "ou_a,ou_b" \
+  --add-member-ids "ou_c,ou_d"
+```
+
+Execute after approval:
+
+```sh
+sh ./scripts/Run-FeishuGroupFlow.sh \
+  --flow CreateAndAdd \
+  --chat-name "Research Group" \
+  --owner-id "ou_xxx" \
+  --create-user-ids "ou_a,ou_b" \
+  --add-member-ids "ou_c,ou_d" \
+  --execute \
+  --approval-text APPROVE_FEISHU_CHAT_ADMIN
+```
+
+Add member by phone (ID resolve + add flow):
+
+```sh
+sh ./scripts/Run-FeishuGroupFlow.sh \
+  --flow AddOnly \
+  --chat-id "oc_xxx" \
+  --add-member-mobiles "18780986576" \
+  --member-id-type open_id
+```
+
+Windows host fallback:
 
 ```powershell
 cd $RepoRoot
@@ -111,7 +149,26 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-FeishuGroupFlo
   -ApprovalText APPROVE_FEISHU_CHAT_ADMIN
 ```
 
-## 9) Rollback
+## 9) Fix host-path access (`Path escapes sandbox root`)
+
+When user gives `C:\...` paths, import into workspace first:
+
+```powershell
+cd $RepoRoot
+.\scripts\Sync-WorkspacePath.ps1 `
+  -SourcePath "C:\path\to\file-or-folder" `
+  -DryRun
+```
+
+After approval:
+
+```powershell
+.\scripts\Sync-WorkspacePath.ps1 `
+  -SourcePath "C:\path\to\file-or-folder" `
+  -ApprovalText APPROVE_WORKSPACE_IMPORT
+```
+
+## 10) Rollback
 
 ```powershell
 cd $RepoRoot
@@ -120,7 +177,7 @@ cd $RepoRoot
 
 Backups are stored under `%USERPROFILE%\.openclaw\backups\capability-pack`.
 
-## 10) Warning repair shortcut
+## 11) Warning repair shortcut
 
 ```powershell
 cd $RepoRoot
@@ -129,7 +186,7 @@ cd $RepoRoot
   -Workspace $Workspace
 ```
 
-## 11) Post-install checks
+## 12) Post-install checks
 
 ```powershell
 openclaw.cmd skills check

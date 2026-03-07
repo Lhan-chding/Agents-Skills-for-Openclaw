@@ -2,6 +2,32 @@
 
 All notable changes to this capability pack are documented here.
 
+## [2.0.5] - 2026-03-07
+
+### Added
+
+- Linux-sandbox-compatible Feishu bridge scripts:
+  - `scripts/Invoke-FeishuChatAdmin.sh`
+  - `scripts/Run-FeishuGroupFlow.sh`
+- New workspace import helper for sandbox path boundary:
+  - `scripts/Sync-WorkspacePath.ps1`
+
+### Changed
+
+- Feishu bridge now supports ID resolution workflow (`mobile/email -> user ID`) via `BatchGetIds`:
+  - `scripts/Invoke-FeishuChatAdmin.ps1`
+  - `scripts/Run-FeishuGroupFlow.ps1`
+- Installer now syncs bridge scripts into `~/.openclaw/workspace/scripts` to prevent runtime path-escape issues.
+- Verification script now checks workspace bridge scripts and adds advisory check for workspace skill source.
+- `Run-FeishuGroupFlow.ps1` and `.sh` now include write-back path fallback when default workspace memory path is unavailable.
+
+### Docs
+
+- Rewrote `README.md` with clearer operator-facing instructions (no GitHub upload steps).
+- Expanded `INSTALL.md` with Linux sandbox bridge commands and path-import flow.
+- Rewrote `docs/FEISHU-CHAT-ADMIN.md` with official API references and troubleshooting.
+- Updated `docs/FEISHU-ENHANCEMENT.md`, `docs/VALIDATION-AND-RELEASE.md`, and `SECURITY-MODEL.md` for sandbox/path boundary rules.
+
 ## [2.0.4] - 2026-03-07
 
 ### Fixed

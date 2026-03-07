@@ -10,56 +10,64 @@ This workspace is optimized for five assistant capabilities:
 
 ## Skill Routing
 
-Use one primary skill by default. Mix only when the user explicitly asks.
+Use one primary skill by default. Mix only when user intent clearly requires it.
 
-- Coding/implementation/refactor/review/security analysis: `research-first-secure-coding`
-- Paper explanation/derivation/discretization/loss/experiment interpretation: `paper-reading-formula-tutor`
-- Doc rewrite/terminology normalization/Feishu collaboration: `writing-feishu-copilot`
-- Feishu group create/member add operations: `feishu-chat-admin-bridge`
-- MEMORY.md maintenance/daily-memory compression/archive promotion: `memory-curator`
+1. Coding/implementation/refactor/review/security analysis: `research-first-secure-coding`
+2. Paper explanation/derivation/discretization/loss/experiment interpretation: `paper-reading-formula-tutor`
+3. Doc rewrite/terminology normalization/Feishu collaboration: `writing-feishu-copilot`
+4. Feishu group create/member add operations: `feishu-chat-admin-bridge`
+5. MEMORY.md maintenance/daily-memory compression/archive promotion: `memory-curator`
 
 ## Control Layers
 
-### `hard-control` (platform enforced)
+### Hard control (platform enforced)
 
 - exec approvals (`exec-approvals.json`)
-- sandbox workspace access
-- tools profile and tool allow/deny policy
-- local memory provider settings
+- sandbox workspace boundary
+- tools profile and allow/deny policy
+- local memory provider/fallback settings
 
-### `engineering-control` (configured implementation)
+### Engineering control (configured implementation)
 
-- default agent is read-only and more conservative
+- default agent is conservative
 - dev agent is writable but constrained
-- boot/md and session-memory hooks are enabled
-- scripts provide dry-run, backup, rollback, and verification
+- boot/md and session-memory hooks enabled
+- scripts provide dry-run, backup, rollback, verification
 
-### `prompt-control` (soft policy, not hard enforcement)
+### Prompt control (soft policy, not hard enforcement)
 
-Before tool actions, ask for explicit user confirmation and wait for user approval:
+Before tool actions, request explicit user confirmation for:
 
 - file search/list/read
 - file create/edit/delete
-- source code file modify/refactor/rename (all code changes)
-- shell/terminal execution
-- web search / browser navigation / external fetch
+- source code modifications
+- shell/terminal commands
+- web search/browser/external fetch
 - dependency install/update
-- database migration/deployment/infrastructure changes
+- database/deployment/infrastructure actions
 
 Approval workflow:
 
-1. State the intended action in one sentence.
-2. State expected impact (files/commands/network).
+1. State intended action in one sentence.
+2. State impact (files/commands/network).
 3. Ask for explicit approval.
-4. Execute only after user approves in the same session.
+4. Execute only after approval.
+
+## Sandbox Path Rule
+
+- Do not directly access host absolute paths (for example `C:\...`) inside sandbox.
+- Import to workspace first using:
+  - `scripts/Sync-WorkspacePath.ps1 -DryRun`
+  - `scripts/Sync-WorkspacePath.ps1 -ApprovalText APPROVE_WORKSPACE_IMPORT`
+- After import, use workspace path only.
 
 ## Delivery Rules
 
-- Prefer plan-first for substantial changes.
-- Keep claims traceable to code, logs, or cited sources.
+- Use plan-first for substantial changes.
+- Keep claims traceable to code/log/source.
 - Distinguish verified facts from assumptions.
-- In review tasks: list findings first, sorted by severity.
-- In writing tasks: default to `修改建议 + 可直接粘贴版本`.
+- In review tasks: findings first, sorted by severity.
+- In writing tasks: default to "修改建议 + 可直接粘贴版本".
 
 ## Memory Rules
 

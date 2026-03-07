@@ -37,4 +37,9 @@ If not, explain that confirmation is a prompt-level control.
 
 - `feishu_chat`: read-focused (chat info/member query), not full chat admin.
 - `feishu_perm`: doc/drive permission management, not group member admin.
-- For group create/member add, use `scripts/Invoke-FeishuChatAdmin.ps1` via explicit approval workflow.
+- For group create/member add, use bridge scripts with explicit approval:
+  - sandbox default: `scripts/Invoke-FeishuChatAdmin.sh` / `scripts/Run-FeishuGroupFlow.sh`
+  - host fallback: `scripts/Invoke-FeishuChatAdmin.ps1` / `scripts/Run-FeishuGroupFlow.ps1`
+- For host absolute paths (`C:\...`), import to workspace first:
+  - `scripts/Sync-WorkspacePath.ps1 -DryRun`
+  - `scripts/Sync-WorkspacePath.ps1 -ApprovalText APPROVE_WORKSPACE_IMPORT`

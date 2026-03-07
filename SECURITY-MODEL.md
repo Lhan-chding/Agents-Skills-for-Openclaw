@@ -1,51 +1,58 @@
 # Security Model
 
-本文件区分三类控制，避免把软提示词误当成硬防护。
+本文明确区分三层控制，避免把软提示词误当硬防护。
 
-## 1. `hard-control`（OpenClaw 官方机制）
+## 1. Hard Control（OpenClaw 官方硬机制）
 
-这些机制由平台运行时强制执行：
+这些是平台强制执行：
 
-- `exec-approvals.json`
-- sandbox（`mode/scope/workspaceAccess`）
-- tool policy（`tools.profile` + allow/deny）
-- `tools.elevated.enabled`
-- memory search provider/fallback
+1. `exec-approvals.json`
+2. sandbox（`mode` / `scope` / `workspaceAccess`）
+3. tools policy（`tools.profile` + `allow/deny`）
+4. `tools.elevated.enabled`
+5. memory search provider/fallback
 
-## 2. `engineering-control`（本能力包实现）
+## 2. Engineering Control（本 capability pack 工程实现）
 
-这些机制建立在官方能力上，由本仓库脚本/配置持续维护：
+这些基于官方机制，由仓库脚本与配置落地：
 
-- `config/openclaw.patch.json` 提供安全基线
-- `scripts/*.ps1` 提供安装、更新、验证、回滚、dry-run
-- workspace 模板约束 memory 生命周期
-- hooks 默认开启 `boot-md`、`bootstrap-extra-files`、`session-memory`
+1. `config/openclaw.patch.json` 提供安全基线
+2. `scripts/*.ps1` 提供安装/更新/验证/回滚/dry-run
+3. `scripts/*.sh` 提供 Linux sandbox 兼容执行路径
+4. `scripts/Sync-WorkspacePath.ps1` 处理外部路径导入，规避 path-escape
+5. workspace 模板约束 memory 生命周期与压缩规则
+6. hooks 默认启用：`boot-md` / `bootstrap-extra-files` / `session-memory`
 
-## 3. `prompt-control`（软约束）
+## 3. Prompt Control（软约束）
 
-这些只在提示词层生效，不等价于平台强制：
+这些只在提示词层生效，不等价于平台硬防护：
 
-- 执行命令前先确认
-- 代码或文档大改前先确认
-- 论文解释中标注原文与推断边界
+1. 高风险动作前解释风险并请求确认
+2. 大规模改动前给出 plan-first / dry-run
+3. 论文解释时标注“原文含义”与“推断解释”边界
 
-## 4. 高风险动作处理
+## 4. 高风险动作处置顺序
 
-优先级顺序：
+1. 先用 hard control 限权
+2. 再用 engineering control 固化流程
+3. 最后用 prompt control 做行为提醒
 
-1. 先用 `hard-control` 限制能力面。
-2. 再用 `engineering-control` 做默认策略和自动化校验。
-3. 最后用 `prompt-control` 作为补充提醒。
+## 5. Sandbox 路径边界（重点）
 
-## 5. 本地 memory 安全要求
+- sandbox 默认不能直接读取宿主 `C:\...` 路径。
+- 正确流程：先导入到 workspace，再在 sandbox 中读写。
+- 导入脚本：`scripts/Sync-WorkspacePath.ps1`
+- 导入执行口令：`APPROVE_WORKSPACE_IMPORT`
 
-- 默认 `provider=local`
-- 默认 `fallback=none`
-- 禁止把 memory embedding 索引默认回退到云端
-- 禁止在 memory 文件中写入 secrets
+## 6. 本地 memory 要求
 
-## 6. 供应链与插件边界
+1. 默认 `provider=local`
+2. 默认 `fallback=none`
+3. 不默认回退到云端 embedding
+4. memory 文件中禁止写入 secrets
 
-- Feishu/Discord 是当前基线可选插件。
-- QQ/微信/企业微信只保留适配蓝图，不默认启用。
-- 任何新增插件必须经过最小权限审查与显式启用。
+## 7. 插件与扩展边界
+
+1. Feishu/Discord 为当前可选基线
+2. QQ/微信/企业微信仅做扩展蓝图，不默认启用
+3. 新插件必须经过最小权限审查并显式开启

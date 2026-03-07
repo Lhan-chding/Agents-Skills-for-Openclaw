@@ -1,49 +1,84 @@
 # OpenClaw Capability Pack v2
 
-一个面向长期使用的 OpenClaw 本地能力包，目标是让 assistant 在真实工作流里做到：
+面向 OpenClaw 的本地能力包，目标是：
 
-1. 安全优先
-2. 研究优先
-3. 本地优先
-4. 可维护、可回滚
+1. 保留 `research-first-secure-coding` 核心工作流
+2. 增强论文阅读与公式精讲
+3. 增强写作/飞书协作
+4. 在安全优先前提下，支持飞书群管理桥接（建群/拉人）
+5. 保持本地 memory，不默认上云
 
-核心能力：
+## 1. 能力概览
 
-1. 代码协作（research-first secure coding）
-2. 论文阅读与公式精讲（paper tutor）
-3. 写作与飞书协作（writing copilot）
-4. 本地记忆压缩与归档（memory curator）
-5. 定时提醒与渠道推送（cron + channels）
+包含 5 个技能：
 
-English summary: A local-first OpenClaw capability bundle with hardened config, production-oriented skills, PowerShell automation, and clear validation/rollback workflows.
+1. `research-first-secure-coding`
+2. `paper-reading-formula-tutor`
+3. `writing-feishu-copilot`
+4. `feishu-chat-admin-bridge`
+5. `memory-curator`
 
-## 1. v2 解决的问题
+重点新增：
 
-1. 清理了当前模型路线下常见 warning（尤其是 `coding` profile 中 `apply_patch/image/cron` unknown entries）。
-2. 保留“默认保守、dev 可写但审慎”的安全分层。
-3. 固化本地 memory 策略：`provider=local`、`fallback=none`。
-4. 提供一键安装、更新、验证、回滚脚本，不依赖手工改 JSON。
-5. 补齐开源仓库治理文件和 docs。
+- 飞书群管理桥接支持 `手机号/邮箱 -> 用户ID -> 拉人`
+- Linux sandbox 可执行 `.sh` 脚本（不再依赖 `powershell`）
+- 工作区路径镜像脚本，解决 `Path escapes sandbox root`
 
-## 2. 快速开始（推荐）
+## 2. 安全分层（请区分）
 
-### 2.1 前置条件
+### 2.1 官方硬机制（平台强制）
 
-1. 已安装 OpenClaw CLI（可运行 `openclaw.cmd --version`）。
-2. 在 Windows PowerShell 执行。
-3. 本地有本仓库目录。
+1. OpenClaw `approvals.exec`
+2. sandbox 根路径隔离（workspace root）
+3. tools allowlist / denylist
 
-### 2.2 设定通用路径变量
+### 2.2 工程实现（本仓库脚本实现）
 
-```powershell
-$RepoRoot = "<YOUR_REPO_PATH>\\openclaw-capability-pack"
-$OpenClawHome = "$env:USERPROFILE\\.openclaw"
-$Workspace = "$OpenClawHome\\workspace"
+1. 飞书桥接脚本默认先 dry-run
+2. 变更类动作要求 `APPROVE_FEISHU_CHAT_ADMIN`
+3. 外部路径导入要求 `APPROVE_WORKSPACE_IMPORT`
+4. 安装脚本自动同步 skills + bridge scripts 到 workspace
+
+### 2.3 软约束（prompt 级，不是硬防护）
+
+1. 执行前解释风险
+2. 请求用户确认
+3. 失败后给可执行修复建议
+
+## 3. 目录结构
+
+```text
+openclaw-capability-pack/
+  config/
+  docs/
+  scripts/
+    Install-OpenClawCapabilityPack.ps1
+    Update-OpenClawCapabilityPack.ps1
+    Verify-OpenClawCapabilityPack.ps1
+    Invoke-FeishuChatAdmin.ps1
+    Run-FeishuGroupFlow.ps1
+    Invoke-FeishuChatAdmin.sh
+    Run-FeishuGroupFlow.sh
+    Sync-WorkspacePath.ps1
+  skills/
+    research-first-secure-coding/
+    paper-reading-formula-tutor/
+    writing-feishu-copilot/
+    feishu-chat-admin-bridge/
+    memory-curator/
+  workspace-templates/
+  README.md
+  INSTALL.md
+  SECURITY-MODEL.md
 ```
 
-### 2.3 安装
+## 4. 快速安装（Windows + PowerShell）
 
 ```powershell
+$RepoRoot = "<YOUR_CAPABILITY_PACK_PATH>"
+$OpenClawHome = "$env:USERPROFILE\.openclaw"
+$Workspace = "$OpenClawHome\workspace"
+
 Set-ExecutionPolicy -Scope Process Bypass -Force
 cd $RepoRoot
 
@@ -53,233 +88,133 @@ cd $RepoRoot
   -Force
 ```
 
-### 2.4 验证
+安装后校验：
 
 ```powershell
 .\scripts\Verify-OpenClawCapabilityPack.ps1 `
   -OpenClawHome $OpenClawHome `
   -Workspace $Workspace
 
-openclaw.cmd config validate
 openclaw.cmd skills check
+openclaw.cmd sandbox explain --agent dev
+openclaw.cmd gateway health
 ```
 
-### 2.5 仅预演（不落盘）
+## 5. 飞书群管理桥接（重点）
 
-```powershell
-.\scripts\Install-OpenClawCapabilityPack.ps1 `
-  -OpenClawHome $OpenClawHome `
-  -Workspace $Workspace `
-  -Force `
-  -DryRun
+官方 API 参考（主依据）：
+
+1. tenant access token:
+   - https://open.feishu.cn/document/server-docs/authentication-management/access-token/tenant_access_token_internal
+2. batch_get_id（手机号/邮箱查 ID）:
+   - https://open.feishu.cn/document/server-docs/contact-v3/user/batch_get_id
+3. chat create / add members:
+   - https://open.feishu.cn/document/server-docs/im-v1/chat/create
+   - https://open.feishu.cn/document/server-docs/im-v1/chat-members/create
+
+### 5.1 在 Linux sandbox 中执行（推荐）
+
+Dry-run：
+
+```sh
+sh ./scripts/Run-FeishuGroupFlow.sh \
+  --flow AddOnly \
+  --chat-id "oc_xxx" \
+  --add-member-mobiles "18780986576" \
+  --member-id-type open_id
 ```
 
-## 3. 控制分层（必须区分）
+执行（需审批口令）：
 
-### `hard-control`（官方强制机制）
-
-1. `exec-approvals.json`
-2. sandbox（`workspaceAccess` / `mode` / `scope`）
-3. tools policy（`profile + allow/deny`）
-4. memory search provider/fallback
-
-### `engineering-control`（本仓库工程实现）
-
-1. `config/openclaw.patch.json` 安全基线
-2. PowerShell 自动化脚本（安装/更新/验证/回滚）
-3. workspace 模板（`AGENTS.md`/`TOOLS.md`/`MEMORY.md`/`BOOT.md`）
-4. hooks 组合（`boot-md`、`bootstrap-extra-files`、`session-memory`）
-
-### `prompt-control`（软约束，不是硬防护）
-
-1. 高风险动作前先确认
-2. 任何代码文件修改前先申请并等待批准
-3. 写作默认“修改建议 + 可直接粘贴版本”
-4. 论文解释显式标注“原文/解释/推断”
-
-## 4. 五个 Skills
-
-| Skill | 作用 | 典型触发 |
-| --- | --- | --- |
-| `research-first-secure-coding` | 研究优先 + 安全工程 | 设计/实现/重构/审查 + auth/secrets/shell/db/deploy |
-| `paper-reading-formula-tutor` | 论文精读 + 推导教学 | 章节总结、逐符号解释、逐步推导、离散化/loss/边界条件 |
-| `writing-feishu-copilot` | 文档协作与改写 | “修改建议 + 可直接粘贴版本”、术语统一、结构整理 |
-| `feishu-chat-admin-bridge` | 飞书群管理桥接 | 建群/拉人等需要调用飞书 Open API 的场景 |
-| `memory-curator` | 本地记忆维护 | 日记忆压缩、长期记忆升格、冲突标注 |
-
-## 5. 常用命令（按场景）
-
-### 5.1 升级（覆盖安装）
-
-```powershell
-cd $RepoRoot
-.\scripts\Update-OpenClawCapabilityPack.ps1 `
-  -OpenClawHome $OpenClawHome `
-  -Workspace $Workspace
+```sh
+sh ./scripts/Run-FeishuGroupFlow.sh \
+  --flow AddOnly \
+  --chat-id "oc_xxx" \
+  --add-member-mobiles "18780986576" \
+  --member-id-type open_id \
+  --execute \
+  --approval-text APPROVE_FEISHU_CHAT_ADMIN
 ```
 
-### 5.2 快速修复 warning（配置+审批）
-
-```powershell
-cd $RepoRoot
-.\scripts\Fix-ToolsProfileWarnings.ps1 `
-  -OpenClawHome $OpenClawHome `
-  -Workspace $Workspace
-```
-
-### 5.3 回滚
-
-```powershell
-cd $RepoRoot
-.\scripts\Rollback-OpenClawConfig.ps1 -OpenClawHome $OpenClawHome
-```
-
-### 5.4 记忆压缩
-
-```powershell
-cd $RepoRoot
-.\scripts\Compress-Memory.ps1 -Workspace $Workspace -OlderThanDays 7
-```
-
-## 6. Feishu / Discord / Cron（可选）
-
-默认能力包不强制你立即启用所有渠道。
-
-启用可选渠道时：
-
-1. 先编辑 `config/openclaw.channels.optional.json` 的占位符。
-2. 再应用补丁：
-
-```powershell
-cd $RepoRoot
-.\scripts\Apply-OpenClawPatch.ps1 `
-  -OpenClawHome $OpenClawHome `
-  -PatchPath ".\\config\\openclaw.channels.optional.json"
-```
-
-Cron 示例见：`config/cron-jobs.examples.md`。
-
-### 6.1 Feishu 群管理（建群/拉人）注意事项
-
-1. OpenClaw 当前内置 `feishu_chat` 工具是读操作边界（群信息、群成员查询），不是完整群管理工具。
-2. 如果你需要“建群/拉人”，请使用：
-   - `scripts/Run-FeishuGroupFlow.ps1`（推荐，一键编排）
-   - `scripts/Invoke-FeishuChatAdmin.ps1`（底层动作脚本）
-   - `skills/feishu-chat-admin-bridge/SKILL.md`
-3. 安全流程：
-   - 先 `-DryRun` 预演
-   - 再显式审批执行（`-ApprovalText APPROVE_FEISHU_CHAT_ADMIN`）
-4. 需要有效的 `FEISHU_APP_ID` / `FEISHU_APP_SECRET`，并在飞书开放平台授予对应 IM scopes。
-5. `feishu_perm` 属于敏感权限工具，默认不启用；需要时再应用 `config/openclaw.feishu.perm.optional.json`。
-
-一键 dry-run 示例：
+### 5.2 Windows 主机回退
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-FeishuGroupFlow.ps1 `
-  -Flow CreateAndAdd `
-  -ChatName "Research Group" `
-  -OwnerId "ou_xxx" `
-  -CreateUserIds "ou_a","ou_b" `
-  -AddMemberIds "ou_c","ou_d"
+  -Flow AddOnly `
+  -ChatId "oc_xxx" `
+  -AddMemberMobiles "18780986576" `
+  -Execute `
+  -ApprovalText APPROVE_FEISHU_CHAT_ADMIN
 ```
 
-## 7. 验收标准（建议逐条检查）
+## 6. 彻底规避 Path Escapes 报错
 
-1. 验证脚本显示 `All required checks passed.`  
-2. `openclaw.cmd config validate` 成功。  
-3. `openclaw.cmd skills check` 中 4 个目标 skill 都可用。  
-4. `openclaw.cmd sandbox explain --agent dev` 显示 dev 可写且受限。  
-5. 新日志时间窗口内不再出现 `tools.profile (coding) allowlist contains unknown entries ...`。  
+你看到过的报错：
 
-## 8. 目录结构
+- `Path escapes sandbox root`
 
-```text
-openclaw-capability-pack/
-  config/
-  scripts/
-  skills/
-  workspace-templates/
-  docs/
-  README.md
-  INSTALL.md
-  SECURITY-MODEL.md
-  LICENSE
-  CONTRIBUTING.md
-  SECURITY.md
-  CHANGELOG.md
-  CODE_OF_CONDUCT.md
-  CITATION.cff
-```
+根因：
 
-## 9. 故障排查（简版）
+- sandbox 只能访问 workspace 根路径，不能直接访问 `C:\...` 宿主路径。
 
-### Q1: 安装后 skill 没加载
+正确做法：先导入再使用。
+
+Dry-run 导入：
 
 ```powershell
-openclaw.cmd skills check
+.\scripts\Sync-WorkspacePath.ps1 `
+  -SourcePath "C:\path\to\file-or-folder" `
+  -DryRun
 ```
 
-确认 `research-first-secure-coding / paper-reading-formula-tutor / writing-feishu-copilot / memory-curator` 在可用列表。
-
-### Q2: 仍看到历史 warning
-
-先重启 gateway，再看“最近时间窗口”的日志。历史旧日志不代表当前配置仍有问题。
-
-### Q3: 想先确保不改动再执行
-
-所有主脚本支持 `-DryRun`，先预演再落盘。
-
-### Q4: 飞书里提示“无法访问技能文件 / 无法执行 feishu-perm 建群拉人”
-
-先区分三件事：
-
-1. `feishu-perm` 是文档/云盘权限工具，不是群管理工具。
-2. 内置 `feishu_chat` 默认是读操作（群信息、成员查询），不是建群/拉人全功能。
-3. 建群/拉人要走桥接脚本：`scripts/Invoke-FeishuChatAdmin.ps1`（先 `-DryRun`，后审批执行）。
-
-再检查配置是否生效：
+审批后导入：
 
 ```powershell
-openclaw.cmd sandbox explain --agent dev
-openclaw.cmd skills check
+.\scripts\Sync-WorkspacePath.ps1 `
+  -SourcePath "C:\path\to\file-or-folder" `
+  -ApprovalText APPROVE_WORKSPACE_IMPORT
 ```
 
-确认 `dev` allowlist 包含 `feishu_chat`、`feishu_doc`、`feishu_app_scopes` 等工具。
-若你要启用 `feishu_perm`，再额外应用：
+然后让 agent 只使用导入后的 workspace 路径。
 
-```powershell
-.\scripts\Apply-OpenClawPatch.ps1 `
-  -PatchPath ".\\config\\openclaw.feishu.perm.optional.json"
-```
+## 7. Memory 本地化
+
+通过 `config/openclaw.patch.json` 约束：
+
+1. `memorySearch.provider = local`
+2. `memorySearch.fallback = none`
+3. `session-memory` / `boot-md` / `bootstrap-extra-files` 启用
+
+日记忆模板：
+
+- `workspace-templates/memory/YYYY-MM-DD.template.md`
+
+压缩规则：
+
+- `workspace-templates/memory/COMPRESSION-RULES.md`
+
+## 8. 常见问题
+
+1. `/bin/sh: powershell: not found`
+- 用 `.sh` 脚本，不要在 sandbox 内跑 `powershell -File ...`
+
+2. `Path escapes sandbox root`
+- 先运行 `Sync-WorkspacePath.ps1` 把外部路径导入 workspace
+
+3. 飞书返回 `99991663`
+- 一般是 scope 不足、应用未完成审批或租户策略限制
+
+4. `tenant_access_token` 失败
+- 检查 App ID/App Secret 和应用发布状态
+
+## 9. 参考文档
+
+1. OpenClaw Configuration:
+   - https://docs.openclaw.ai/guides/configuration
+2. OpenClaw Skills:
+   - https://docs.openclaw.ai/guides/skills
+3. Feishu Open Platform（见第 5 节链接）
 
 ## 10. 许可证
 
-Apache-2.0，见 [LICENSE](./LICENSE)。
-
-## 11. Sandbox Path-Escape Quick Fix
-
-When you see:
-
-`read failed: Path escapes sandbox root ... .openclaw\skills\...\SKILL.md`
-
-Cause:
-
-1. sandbox root is `%USERPROFILE%\.openclaw\workspace`
-2. skill resolved from `%USERPROFILE%\.openclaw\skills\...` (outside workspace root)
-
-Fix:
-
-```powershell
-cd $RepoRoot
-.\scripts\Update-OpenClawCapabilityPack.ps1 `
-  -OpenClawHome $OpenClawHome `
-  -Workspace $Workspace
-
-openclaw.cmd gateway restart
-openclaw.cmd skills info feishu-chat-admin-bridge --json
-```
-
-Expected:
-
-1. `source` = `openclaw-workspace`
-2. `filePath` starts with `%USERPROFILE%\.openclaw\workspace\skills\...`
+`Apache-2.0`，见 [LICENSE](./LICENSE)。
