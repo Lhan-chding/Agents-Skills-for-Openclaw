@@ -19,6 +19,8 @@ logs/
 .openclaw/
 cron/jobs.json
 memory/archive/
+memory/
+cache/
 
 # Secrets
 .env

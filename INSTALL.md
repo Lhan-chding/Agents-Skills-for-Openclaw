@@ -169,6 +169,8 @@ cd $RepoRoot
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-MorningDigestScheduledTask.ps1 `
   -Workspace "$env:USERPROFILE\.openclaw\workspace" `
   -Location "中国·成都市双流区" `
+  -WeatherDistrictCode "101270106" `
+  -WeatherCityCode "101270101" `
   -Force
 ```
 
@@ -187,6 +189,11 @@ Default behavior:
 2. 22:40: capture your latest plan into `memory/YYYY-MM-DD.md`.
 3. 07:05: build `cache\morning-digest\YYYY-MM-DD.json` locally on Windows.
 4. 07:30: read only the local cache + plan memory, then send the morning digest.
+
+Weather note:
+
+1. The default weather codes above are for Chengdu Shuangliu.
+2. If you deploy to another city, replace `-WeatherDistrictCode` and `-WeatherCityCode`.
 
 Default digest sources:
 

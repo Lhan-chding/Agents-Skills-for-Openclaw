@@ -12,8 +12,12 @@
       },
       "sandbox": {
         "mode": "all",
-        "scope": "session",
+        "scope": "agent",
         "workspaceAccess": "ro",
+        "prune": {
+          "idleHours": 24,
+          "maxAgeDays": 7
+        },
         "browser": {
           "allowHostControl": false
         }
@@ -109,8 +113,12 @@
         },
         "sandbox": {
           "mode": "all",
-          "scope": "session",
+          "scope": "agent",
           "workspaceAccess": "rw",
+          "prune": {
+            "idleHours": 24,
+            "maxAgeDays": 7
+          },
           "browser": {
             "allowHostControl": false
           }

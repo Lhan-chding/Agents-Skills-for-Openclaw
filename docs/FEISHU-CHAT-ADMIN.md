@@ -97,7 +97,7 @@ Add members by mobile (auto resolve IDs):
 sh ./scripts/Run-FeishuGroupFlow.sh \
   --flow AddOnly \
   --chat-id "oc_xxx" \
-  --add-member-mobiles "18780986576" \
+  --add-member-mobiles "<PHONE>" \
   --member-id-type open_id
 ```
 
@@ -107,7 +107,7 @@ sh ./scripts/Run-FeishuGroupFlow.sh \
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-FeishuGroupFlow.ps1 `
   -Flow AddOnly `
   -ChatId "oc_xxx" `
-  -AddMemberMobiles "18780986576"
+  -AddMemberMobiles "<PHONE>"
 ```
 
 Execute:
@@ -116,7 +116,7 @@ Execute:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-FeishuGroupFlow.ps1 `
   -Flow AddOnly `
   -ChatId "oc_xxx" `
-  -AddMemberMobiles "18780986576" `
+  -AddMemberMobiles "<PHONE>" `
   -Execute `
   -ApprovalText APPROVE_FEISHU_CHAT_ADMIN
 ```
@@ -176,3 +176,12 @@ Optional daily memory append:
    - Check App ID/Secret and app deployment status.
 6. `chat_id` invalid:
    - Verify same tenant and correct `oc_...` chat ID.
+7. Scope is enabled in Feishu console, but script still says credentials are missing:
+   - Backend scope and runtime credentials are separate.
+   - Check whether `FEISHU_APP_ID` and `FEISHU_APP_SECRET` are actually injected into the current OpenClaw gateway process.
+8. Bot can reply in DM but cannot mutate groups:
+   - Built-in `feishu_chat` is read-oriented in practice.
+   - Use the bridge scripts for create/add-member mutations.
+9. Bot receives no Feishu events:
+   - Check event subscription mode in Feishu developer console.
+   - Persistent connection / WebSocket mode must be enabled for the current OpenClaw Feishu setup.

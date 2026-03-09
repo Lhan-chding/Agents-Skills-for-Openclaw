@@ -76,7 +76,7 @@ Add by mobile (resolve IDs first):
 sh ./scripts/Run-FeishuGroupFlow.sh \
   --flow AddOnly \
   --chat-id "oc_xxx" \
-  --add-member-mobiles "18780986576" \
+  --add-member-mobiles "<PHONE>" \
   --member-id-type open_id
 ```
 

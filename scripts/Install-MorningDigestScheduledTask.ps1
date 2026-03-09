@@ -3,6 +3,8 @@
     [string]$TaskName = "OpenClaw-MorningDigestCache-0705",
     [string]$RunAt = "07:05",
     [string]$Location = "中国·成都市双流区",
+    [string]$WeatherDistrictCode = "101270106",
+    [string]$WeatherCityCode = "101270101",
     [switch]$Force,
     [switch]$Remove,
     [switch]$DryRun
@@ -41,12 +43,14 @@ if ($null -ne $existingTask -and -not $Force.IsPresent) {
 }
 
 $triggerTime = [datetime]::ParseExact($RunAt, 'HH:mm', $null)
-$actionArgs = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" -Workspace `"$Workspace`" -Location `"$Location`""
+$actionArgs = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" -Workspace `"$Workspace`" -Location `"$Location`" -WeatherDistrictCode `"$WeatherDistrictCode`" -WeatherCityCode `"$WeatherCityCode`""
 $description = "OpenClaw morning digest cache prefetch at $RunAt for $Location. This task fetches local weather/news cache only; 07:30 delivery is handled by OpenClaw cron."
 
 if ($DryRun) {
     Write-Host "[DryRun] TaskName: $TaskName"
     Write-Host "[DryRun] RunAt:    $RunAt"
+    Write-Host "[DryRun] District: $WeatherDistrictCode"
+    Write-Host "[DryRun] City:     $WeatherCityCode"
     Write-Host "[DryRun] Action:   $powerShellExe $actionArgs"
     exit 0
 }
@@ -65,4 +69,6 @@ $task = Get-ScheduledTask -TaskName $TaskName
 Write-Host 'Scheduled task installed:'
 Write-Host "  Name: $($task.TaskName)"
 Write-Host "  RunAt: $RunAt"
+Write-Host "  DistrictCode: $WeatherDistrictCode"
+Write-Host "  CityCode: $WeatherCityCode"
 Write-Host "  Script: $scriptPath"

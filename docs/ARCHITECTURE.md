@@ -18,6 +18,7 @@
 
 - Default agent: conservative, read-only workspace.
 - `dev` agent: writable workspace, explicit tool allowlist, approvals required.
+- Sandbox scope: `agent` by default, so one agent reuses one sandbox instead of creating one container per session.
 
 ## 3. Security Strategy
 

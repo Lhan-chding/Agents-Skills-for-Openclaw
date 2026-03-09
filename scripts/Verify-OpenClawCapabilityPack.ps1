@@ -99,6 +99,7 @@ if (Test-Path $configPath) {
     Add-Check -Name "config:memory.provider=local" -Ok ((Get-Value -Obj $cfg -PathSegments @("agents", "defaults", "memorySearch", "provider")) -eq "local") -Detail "agents.defaults.memorySearch.provider"
     Add-Check -Name "config:memory.fallback=none" -Ok ((Get-Value -Obj $cfg -PathSegments @("agents", "defaults", "memorySearch", "fallback")) -eq "none") -Detail "agents.defaults.memorySearch.fallback"
     Add-Check -Name "config:default.workspace=ro" -Ok ((Get-Value -Obj $cfg -PathSegments @("agents", "defaults", "sandbox", "workspaceAccess")) -eq "ro") -Detail "agents.defaults.sandbox.workspaceAccess"
+    Add-Check -Name "config:default.scope=agent" -Ok ((Get-Value -Obj $cfg -PathSegments @("agents", "defaults", "sandbox", "scope")) -eq "agent") -Detail "agents.defaults.sandbox.scope"
 
     $agents = Get-Value -Obj $cfg -PathSegments @("agents", "list")
     $devAgent = $null
@@ -117,6 +118,7 @@ if (Test-Path $configPath) {
     if ($null -ne $devAgent) {
         Add-Check -Name "config:dev.tools.profile=full" -Ok ($devAgent.tools.profile -eq "full") -Detail "agents.list[id=dev].tools.profile"
         Add-Check -Name "config:dev.workspace=rw" -Ok ($devAgent.sandbox.workspaceAccess -eq "rw") -Detail "agents.list[id=dev].sandbox.workspaceAccess"
+        Add-Check -Name "config:dev.scope=agent" -Ok ($devAgent.sandbox.scope -eq "agent") -Detail "agents.list[id=dev].sandbox.scope"
 
         $allow = @()
         if ($devAgent.tools.allow) {
