@@ -145,8 +145,9 @@ Rules:
 15) If football cache entries include scorers, keep the scorer names and minutes. Do not drop them.
 16) Keep `无畏契约` in the competition name. Do not shorten it to only `大师赛` or `冠军赛`.
 17) Keep one category per line. Do not merge KPL, football, and international news into one paragraph.
-18) Under international news, use 1 to 3 numbered lines instead of one long sentence block.
-19) Keep blank lines between sections.
+18) If one sports category contains multiple matches, split them into 1 to 3 numbered lines. Do not keep a long semicolon chain.
+19) Under international news, use 1 to 3 numbered lines instead of one long sentence block.
+20) Keep blank lines between sections.
 
 Output format:
 【今日重点】
@@ -161,10 +162,19 @@ Output format:
 
 【昨夜赛果】
 无畏契约：
+1.
+2.
 KPL：
+1.
+2.
+3.
 西甲：
+1.
+2.
 英超：
+1.
 欧冠：
+1.
 
 【国际要闻】
 1.

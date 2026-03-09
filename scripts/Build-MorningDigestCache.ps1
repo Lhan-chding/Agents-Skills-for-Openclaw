@@ -770,6 +770,54 @@ function Convert-FootballClubNameToChinese {
     return $normalized
 }
 
+function Convert-FootballPlayerNameToChinese {
+    param([string]$Name)
+
+    if ([string]::IsNullOrWhiteSpace($Name)) { return '' }
+
+    $normalized = $Name.Trim()
+    $map = @{
+        'Tajon Buchanan' = '布坎南'
+        'Santiago Mouriño' = '圣地亚哥·穆里尼奥'
+        'André Silva' = '安德烈·席尔瓦'
+        'Andre Silva' = '安德烈·席尔瓦'
+        'Kiko Femenía' = '基科·费梅尼亚'
+        'Kiko Femenia' = '基科·费梅尼亚'
+        'Martín Satriano' = '马丁·萨特里亚诺'
+        'Martin Satriano' = '马丁·萨特里亚诺'
+        'Kylian Mbappé' = '姆巴佩'
+        'Kylian Mbappe' = '姆巴佩'
+        'Erling Haaland' = '哈兰德'
+        'Mohamed Salah' = '萨拉赫'
+        'Vinícius Júnior' = '维尼修斯'
+        'Vinicius Junior' = '维尼修斯'
+        'Jude Bellingham' = '贝林厄姆'
+        'Robert Lewandowski' = '莱万多夫斯基'
+        'Harry Kane' = '凯恩'
+        'Lautaro Martínez' = '劳塔罗'
+        'Lautaro Martinez' = '劳塔罗'
+        'Marcus Rashford' = '拉什福德'
+        'Bukayo Saka' = '萨卡'
+        'Cole Palmer' = '帕尔默'
+        'Son Heung-min' = '孙兴慜'
+        'Heung-Min Son' = '孙兴慜'
+        'Kevin De Bruyne' = '德布劳内'
+        'Bruno Fernandes' = '布鲁诺·费尔南德斯'
+        'Pedri' = '佩德里'
+        'Gavi' = '加维'
+        'Antoine Griezmann' = '格列兹曼'
+        'Julián Álvarez' = '阿尔瓦雷斯'
+        'Julian Alvarez' = '阿尔瓦雷斯'
+        'Lamine Yamal' = '亚马尔'
+    }
+
+    if ($map.ContainsKey($normalized)) {
+        return $map[$normalized]
+    }
+
+    return $normalized
+}
+
 function Convert-FootballEventToSummary {
     param([object]$Event)
 
@@ -807,7 +855,7 @@ function Convert-FootballEventToSummary {
         $teamId = [string]$play.team.id
         $teamName = if ([string]$homeTeam.team.id -eq $teamId) { $homeName } else { $awayName }
         $athlete = @($play.athletesInvolved)[0]
-        $scorer = if ($null -ne $athlete -and $athlete.displayName) { $athlete.displayName } else { '进球' }
+        $scorer = if ($null -ne $athlete -and $athlete.displayName) { Convert-FootballPlayerNameToChinese -Name ([string]$athlete.displayName) } else { '进球' }
         $clock = [string]$play.clock.displayValue
         $goalLines += ('{0}-{1} {2}' -f $teamName, $scorer, $clock)
     }
