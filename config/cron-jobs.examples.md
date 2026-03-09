@@ -67,19 +67,30 @@ openclaw.cmd cron run --name "daily-top3-priorities"
 openclaw.cmd cron rm --name "oneshot-follow-up"
 ```
 
-## Night Reminder + Morning Plan/Weather Push (Feishu)
+## Night Reminder + 07:05 Cache Prefetch + 07:30 Morning Digest (Feishu)
 
-Install/update both jobs with one command:
+Step 1: install/update the OpenClaw cron jobs:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Setup-DailyPlanWeatherCron.ps1 `
   -To "REPLACE_WITH_FEISHU_CHAT_ID_OR_OPEN_ID" `
-  -Location "Chengdu" `
+  -Location "中国·成都市双流区" `
   -Timezone "Asia/Shanghai" `
+  -Force
+```
+
+Step 2: install the Windows 07:05 prefetch task:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-MorningDigestScheduledTask.ps1 `
+  -Workspace "$env:USERPROFILE\.openclaw\workspace" `
+  -Location "中国·成都市双流区" `
   -Force
 ```
 
 Behavior:
 
 - 22:00 every day: remind you to send tomorrow's plan.
-- 07:30 next morning: summarize today's tasks from your latest plan and include weather + umbrella advice.
+- 22:40 every day: capture the latest user plan into daily memory.
+- 07:05 next morning: build local digest cache under `cache/morning-digest/`.
+- 07:30 next morning: summarize today's tasks from the latest plan and local cache, then send weather + umbrella advice + yesterday news.

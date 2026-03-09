@@ -110,7 +110,10 @@ $bridgeScripts = @(
     "Invoke-FeishuChatAdmin.sh",
     "Run-FeishuGroupFlow.sh",
     "Sync-WorkspacePath.ps1",
-    "Setup-DailyPlanWeatherCron.ps1"
+    "Setup-DailyPlanWeatherCron.ps1",
+    "Build-MorningDigestCache.ps1",
+    "Install-MorningDigestScheduledTask.ps1",
+    "Verify-MorningDigestPipeline.ps1"
 )
 
 foreach ($scriptName in $bridgeScripts) {

@@ -26,10 +26,13 @@
 1. `scripts/Install-OpenClawCapabilityPack.ps1`
 2. `scripts/Update-OpenClawCapabilityPack.ps1`
 3. `scripts/Verify-OpenClawCapabilityPack.ps1`
-4. `scripts/Invoke-FeishuChatAdmin.ps1` / `.sh`
-5. `scripts/Run-FeishuGroupFlow.ps1` / `.sh`
-6. `scripts/Setup-DailyPlanWeatherCron.ps1`
-7. `scripts/Sync-WorkspacePath.ps1`
+4. `scripts/Build-MorningDigestCache.ps1`
+5. `scripts/Install-MorningDigestScheduledTask.ps1`
+6. `scripts/Verify-MorningDigestPipeline.ps1`
+7. `scripts/Invoke-FeishuChatAdmin.ps1` / `.sh`
+8. `scripts/Run-FeishuGroupFlow.ps1` / `.sh`
+9. `scripts/Setup-DailyPlanWeatherCron.ps1`
+10. `scripts/Sync-WorkspacePath.ps1`
 
 ## 2. 目录结构
 
@@ -72,28 +75,49 @@ openclaw.cmd skills check
 openclaw.cmd cron list
 ```
 
-## 4. 每日提醒与晨间简报（你当前需求）
+## 4. 每日提醒与晨间简报
 
 你要的流程：
 
 1. 每晚 22:00 提醒你提交次日计划
-2. 每早 07:30 发送“今日安排 + 天气 + 是否带伞”
+2. 每天 07:05 在 Windows 本机预抓取天气与昨日日报，写入本地缓存
+3. 每早 07:30 由 OpenClaw 只读取本地缓存和计划记忆，然后发送“今日安排 + 天气 + 是否带伞 + 昨日日报”
 
-一键创建/更新：
+先创建 OpenClaw cron：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Setup-DailyPlanWeatherCron.ps1 `
   -To "<FEISHU_OPEN_ID_OR_CHAT_ID>" `
-  -Location "Chengdu Shuangliu" `
+  -Location "中国·成都市双流区" `
   -Timezone "Asia/Shanghai" `
   -Force
 ```
 
-说明：
+再安装本机 07:05 预抓取计划任务：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-MorningDigestScheduledTask.ps1 `
+  -Workspace "$env:USERPROFILE\.openclaw\workspace" `
+  -Location "中国·成都市双流区" `
+  -Force
+```
+
+流程说明：
 
 1. 22:00 任务名：`daily-plan-reminder-2200`
-2. 07:30 任务名：`daily-plan-weather-summary-0730`
-3. 天气数据默认从联网接口获取（脚本内使用 `wttr.in`）
+2. 22:40 任务名：`daily-plan-capture-2240`
+3. 07:05 Windows 计划任务：`OpenClaw-MorningDigestCache-0705`
+4. 07:30 任务名：`daily-plan-weather-summary-0730`
+5. 本地缓存路径：`~\.openclaw\workspace\cache\morning-digest\YYYY-MM-DD.json`
+6. 07:30 不再联网抓取，只读本地缓存，避免把 `agent + web_fetch + LLM` 塞进同一条 cron
+
+数据策略：
+
+1. 天气：`weather.com.cn` 成都 / 双流固定页
+2. 国际新闻：`news.cn/world/`
+3. 足球：优先 ESPN 公共 scoreboard JSON，直接取西甲 / 英超 / 欧冠赛果；有进球事件时附带进球人和时间
+4. 无畏契约 / KPL：使用国内稳定新闻检索页，按“官方级赛事关键词白名单 + 昨日日期”过滤
+5. 缺项统一写 `暂无可核验更新`
 
 查看任务：
 
@@ -106,6 +130,7 @@ openclaw.cmd cron list --json
 
 ```powershell
 openclaw.cmd cron run <JOB_ID>
+Get-Content "$env:USERPROFILE\.openclaw\workspace\cache\morning-digest\$(Get-Date -Format 'yyyy-MM-dd').json"
 ```
 
 ## 5. 飞书群管理（建群/拉人）

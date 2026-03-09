@@ -75,7 +75,10 @@ $workspaceBridgeScripts = @(
     "Invoke-FeishuChatAdmin.sh",
     "Run-FeishuGroupFlow.sh",
     "Sync-WorkspacePath.ps1",
-    "Setup-DailyPlanWeatherCron.ps1"
+    "Setup-DailyPlanWeatherCron.ps1",
+    "Build-MorningDigestCache.ps1",
+    "Install-MorningDigestScheduledTask.ps1",
+    "Verify-MorningDigestPipeline.ps1"
 )
 foreach ($script in $workspaceBridgeScripts) {
     $path = Join-Path $Workspace "scripts\$script"
@@ -140,6 +143,42 @@ if (Test-Path $configPath) {
     Add-Check -Name "config:approvals.exec.enabled=true" -Ok ((Get-Value -Obj $cfg -PathSegments @("approvals", "exec", "enabled")) -eq $true) -Detail "approvals.exec.enabled"
     Add-Check -Name "config:hooks.session-memory=enabled" -Ok ((Get-Value -Obj $cfg -PathSegments @("hooks", "internal", "entries", "session-memory", "enabled")) -eq $true) -Detail "hooks.internal.entries.session-memory.enabled"
     Add-Check -Name "config:hooks.boot-md=enabled" -Ok ((Get-Value -Obj $cfg -PathSegments @("hooks", "internal", "entries", "boot-md", "enabled")) -eq $true) -Detail "hooks.internal.entries.boot-md.enabled"
+
+    $fallbacks = @()
+    $fallbackValue = Get-Value -Obj $cfg -PathSegments @("agents", "defaults", "model", "fallbacks")
+    if ($fallbackValue) {
+        $fallbacks = @($fallbackValue)
+    }
+
+    $authProviders = @()
+    $authProfiles = Get-Value -Obj $cfg -PathSegments @("auth", "profiles")
+    if ($authProfiles) {
+        if ($authProfiles -is [System.Collections.IDictionary]) {
+            foreach ($key in $authProfiles.Keys) {
+                $profile = $authProfiles[$key]
+                if ($null -ne $profile -and $profile.PSObject.Properties.Name -contains "provider") {
+                    $authProviders += [string]$profile.provider
+                }
+            }
+        }
+        else {
+            foreach ($profile in @($authProfiles)) {
+                if ($null -ne $profile -and $profile.PSObject.Properties.Name -contains "provider") {
+                    $authProviders += [string]$profile.provider
+                }
+            }
+        }
+    }
+    $authProviders = @($authProviders | Select-Object -Unique)
+
+    $missingFallbackProviders = @()
+    foreach ($fallback in $fallbacks) {
+        $provider = ([string]$fallback -split "/")[0]
+        if (-not [string]::IsNullOrWhiteSpace($provider) -and $authProviders -notcontains $provider) {
+            $missingFallbackProviders += [string]$fallback
+        }
+    }
+    Add-Check -Name "advisory:model.fallbacks-authenticated" -Ok ($missingFallbackProviders.Count -eq 0) -Detail ("missing={0}" -f ($missingFallbackProviders -join ",")) -Required $false
 }
 
 $approvalsPath = Join-Path $OpenClawHome "exec-approvals.json"
@@ -157,7 +196,7 @@ if (Test-Path $logDir) {
         $recentThreshold = (Get-Date).AddMinutes(-45)
         $warningHits = @()
         foreach ($line in (Get-Content -Path $latestLog.FullName)) {
-            if ($line -notmatch "tools\.profile \(coding\) allowlist contains unknown entries") {
+            if ($line -notmatch "tools\.profile \(coding\) allowlist contains unknown entries|LLM request timed out|lane wait exceeded|API rate limit reached|No API key found for provider ""openrouter""") {
                 continue
             }
             try {
@@ -172,7 +211,7 @@ if (Test-Path $logDir) {
             }
         }
         $detail = "{0} (window >= {1:yyyy-MM-dd HH:mm})" -f $latestLog.FullName, $recentThreshold
-        Add-Check -Name "advisory:latest-log-no-coding-profile-warning" -Ok ($warningHits.Count -eq 0) -Detail $detail -Required $false
+        Add-Check -Name "advisory:latest-log-no-known-routing-warnings" -Ok ($warningHits.Count -eq 0) -Detail $detail -Required $false
     }
     else {
         Add-Check -Name "advisory:openclaw-log-present" -Ok $false -Detail $logDir -Required $false

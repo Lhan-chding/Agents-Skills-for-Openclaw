@@ -149,23 +149,51 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-FeishuGroupFlo
   -ApprovalText APPROVE_FEISHU_CHAT_ADMIN
 ```
 
-## 9) Daily 22:00 reminder + 07:30 plan/weather push (optional)
+## 9) Daily 22:00 reminder + 07:05 cache prefetch + 07:30 morning digest (optional)
 
-Use one command to create/update both cron jobs:
+Step 1: create/update the OpenClaw cron jobs:
 
 ```powershell
 cd $RepoRoot
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Setup-DailyPlanWeatherCron.ps1 `
   -To "REPLACE_WITH_FEISHU_CHAT_ID_OR_OPEN_ID" `
-  -Location "Chengdu" `
+  -Location "中国·成都市双流区" `
   -Timezone "Asia/Shanghai" `
   -Force
+```
+
+Step 2: install the Windows scheduled task that pre-builds the local cache:
+
+```powershell
+cd $RepoRoot
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-MorningDigestScheduledTask.ps1 `
+  -Workspace "$env:USERPROFILE\.openclaw\workspace" `
+  -Location "中国·成都市双流区" `
+  -Force
+```
+
+Step 3: verify the pipeline:
+
+```powershell
+cd $RepoRoot
+.\scripts\Verify-MorningDigestPipeline.ps1 `
+  -OpenClawHome $OpenClawHome `
+  -Workspace $Workspace
 ```
 
 Default behavior:
 
 1. 22:00: remind you to send tomorrow's plan.
-2. 07:30: summarize today's tasks from your latest plan, include weather and umbrella recommendation.
+2. 22:40: capture your latest plan into `memory/YYYY-MM-DD.md`.
+3. 07:05: build `cache\morning-digest\YYYY-MM-DD.json` locally on Windows.
+4. 07:30: read only the local cache + plan memory, then send the morning digest.
+
+Default digest sources:
+
+1. Weather: `weather.com.cn` fixed Chengdu / Shuangliu pages.
+2. Football: ESPN scoreboard JSON for La Liga / Premier League / Champions League.
+3. International: Xinhua world page.
+4. VALORANT / KPL: domestic search results filtered by exact date + tournament whitelist.
 
 ## 10) Fix host-path access (`Path escapes sandbox root`)
 

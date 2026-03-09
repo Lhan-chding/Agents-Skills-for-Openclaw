@@ -7,6 +7,9 @@
   },
   "agents": {
     "defaults": {
+      "model": {
+        "fallbacks": []
+      },
       "sandbox": {
         "mode": "all",
         "scope": "session",
@@ -29,6 +32,9 @@
     "list": [
       {
         "id": "dev",
+        "model": {
+          "fallbacks": []
+        },
         "tools": {
           "profile": "full",
           "allow": [
